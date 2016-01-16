@@ -1,0 +1,1 @@
+linear.exe ..\data\train.bin ..\data\test.txt test_linear.txt
