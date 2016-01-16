@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="matrix.cpp" />
+    <ClInclude Include="def.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="def.h" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{61FEB394-CCF5-4E23-9237-BF078AB463DC}</ProjectGuid>

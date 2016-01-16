@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include<fstream>
 #include<iostream>
 #include<map>
@@ -6,8 +6,8 @@
 #include<set>
 using namespace std;
 
-typedef int ID_TYPE;//idÀàĞÍ
-typedef short RATE_TYPE;//ÆÀ·ÖÀàĞÍ
+typedef int ID_TYPE;//idç±»å‹
+typedef short RATE_TYPE;//è¯„åˆ†ç±»å‹
 typedef int ATTR_TYPE;
 
 struct Rank
@@ -49,9 +49,9 @@ typedef vector<Rank> RANK_LIST;
 #define ID_LEN sizeof(ID_TYPE)
 #define RATE_LEN sizeof(RATE_TYPE)
 #define ATTR_LEN sizeof(ATTR_TYPE)
-//ÈıÔªÊı¾İ
+//ä¸‰å…ƒæ•°æ®
 #define RAETS_FILE "../data/rates.bin"
-//¶şÔª¶à×éÊı¾İ
+//äºŒå…ƒå¤šç»„æ•°æ®
 #define USER_RATE_FILE "../data/user_rates.bin"
 #define ITEM_ATTR_FILE "../data/attr.bin"
 #define TRAIN_FILE "../data/train.bin"
@@ -59,13 +59,13 @@ typedef vector<Rank> RANK_LIST;
 #define TEST_INPUT_FILE "../data/test_input.txt"
 #define TEST_OUTPUT_FILE "../data/test_output.txt"
 
-//¶ÁÈëÎÄ±¾¸ñÊ½Êı¾İ
+//è¯»å…¥æ–‡æœ¬æ ¼å¼æ•°æ®
 USER_RATE_LIST ReadRate(char* filename)
 {
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "ÎÄ¼ş´ò¿ª³ö´í";
+		cout << "æ–‡ä»¶æ‰“å¼€å‡ºé”™";
 		exit(1);
 	}
 	ID_TYPE userid, item;
@@ -88,7 +88,7 @@ USER_RATE_LIST ReadRate(char* filename)
 	return rate_list;
 }
 
-//¶ÁÈë¶ş½øÖÆÊı¾İ
+//è¯»å…¥äºŒè¿›åˆ¶æ•°æ®
 RANK_LIST * LoadRates(char* file, int & LEN)
 {
 	ifstream input(file, ios::binary);
@@ -97,7 +97,7 @@ RANK_LIST * LoadRates(char* file, int & LEN)
 	RANK_LIST *rates = new RANK_LIST[LEN];
 	RANK_LIST::iterator r;
 	do
-	{//Öğ¸öÓÃ»§¶ÁÈ¡
+	{//é€ä¸ªç”¨æˆ·è¯»å–
 		input.read((char*)&n, ID_LEN);
 		rates[i] = RANK_LIST(n);
 		for (r = rates[i].begin(); r != rates[i].end(); r++)
@@ -110,7 +110,7 @@ RANK_LIST * LoadRates(char* file, int & LEN)
 	return rates;
 }
 
-//¶ÁÈë¶ş½øÖÆÊôĞÔ
+//è¯»å…¥äºŒè¿›åˆ¶å±æ€§
 ATTR_MAP LoadAttr(char* attrfile = ITEM_ATTR_FILE)
 {
 	ifstream input(attrfile, ios::binary);
@@ -127,13 +127,13 @@ ATTR_MAP LoadAttr(char* attrfile = ITEM_ATTR_FILE)
 	return attrs;
 }
 
-//¶ÁÈ¡²âÊÔÊı¾İ
+//è¯»å–æµ‹è¯•æ•°æ®
 USER_RATE_LIST ReadTest(char* filename)
 {
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "ÎÄ¼ş´ò¿ª³ö´í";
+		cout << "æ–‡ä»¶æ‰“å¼€å‡ºé”™";
 		exit(1);
 	}
 	ID_TYPE userid;

@@ -1,4 +1,4 @@
-#ifndef ANN_CPP
+ï»¿#ifndef ANN_CPP
 #define ANN_CPP
 
 #include"ANN.h"
@@ -8,21 +8,21 @@
 #include<fstream>
 #include<iostream>
 
-//sigmoid º¯Êı
+//sigmoid å‡½æ•°
 inline double Sigmoid(double x)
 {
 	return 1.0 / (1.0 + exp(-1.0 * x));
 }
 
-//»ñÈ¡Ëæ»úÊı
-//max Ëæ»úÊı×î´óÖµ
-//precision ¾«¶È
+//è·å–éšæœºæ•°
+//max éšæœºæ•°æœ€å¤§å€¼
+//precision ç²¾åº¦
 inline double GetRandom(double max = 10, double precision = 100000)
 {
 	return max*((rand() % (int)precision + 1) / precision);
 }
 
-//¹¹ÔìÍøÂç
+//æ„é€ ç½‘ç»œ
 ANN::ANN(char* data_filename)
 {
 	counter = 0;
@@ -30,16 +30,16 @@ ANN::ANN(char* data_filename)
 		this->Init();
 }
 
-//¹¹ÔìÍøÂç
+//æ„é€ ç½‘ç»œ
 ANN::ANN(int n, int* layers, double max, double min)
 {
 	counter = 0;
 	width = abs(max - min);
 	mid = (max + min) / 2;
-	/*¶ÁÈ¡²ãÊı Ã¿²ã½ÚµãÊı*/
-	this->LAYERNUMS = n;//¶ÁÈ¡²ãÊı
+	/*è¯»å–å±‚æ•° æ¯å±‚èŠ‚ç‚¹æ•°*/
+	this->LAYERNUMS = n;//è¯»å–å±‚æ•°
 	layerNum = new int[n];
-	//¸üĞÂÃ¿²ã½ÚµãÊı
+	//æ›´æ–°æ¯å±‚èŠ‚ç‚¹æ•°
 	for (int i = 0; i < n; i++)
 	{
 		layerNum[i] = layers[i];
@@ -48,14 +48,14 @@ ANN::ANN(int n, int* layers, double max, double min)
 }
 
 
-//³õÊ¼»¯ÍøÂç½Úµã
+//åˆå§‹åŒ–ç½‘ç»œèŠ‚ç‚¹
 void ANN::Init()
 {
-	srand((unsigned)time(0));//Ëæ»úÖÖ×Ó
+	srand((unsigned)time(0));//éšæœºç§å­
 
-							 //³õÊ¼»¯È¨Öµ¾ØÕó
-	w = new double**[LAYERNUMS];//È¨Öµ¾ØÕó
-	w[LAYERNUMS - 1] = NULL;//×îºóÒ»²ãÎªÊä³ö²ãÖ®ºóÎŞÈ¨Öµ
+							 //åˆå§‹åŒ–æƒå€¼çŸ©é˜µ
+	w = new double**[LAYERNUMS];//æƒå€¼çŸ©é˜µ
+	w[LAYERNUMS - 1] = NULL;//æœ€åä¸€å±‚ä¸ºè¾“å‡ºå±‚ä¹‹åæ— æƒå€¼
 	for (int i = 0; i < LAYERNUMS - 1; i++)
 	{
 		w[i] = new double*[layerNum[i]];
@@ -69,9 +69,9 @@ void ANN::Init()
 		}
 	}
 
-	//³õÊ¼»¯ãĞÖµ¾ØÕó
+	//åˆå§‹åŒ–é˜ˆå€¼çŸ©é˜µ
 	b = new double*[LAYERNUMS];
-	b[0] = NULL;//µÚÒ»²ãÎªÊäÈë²ãÎŞãĞÖµ
+	b[0] = NULL;//ç¬¬ä¸€å±‚ä¸ºè¾“å…¥å±‚æ— é˜ˆå€¼
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
 		b[i] = new double[layerNum[i]];
@@ -81,16 +81,16 @@ void ANN::Init()
 		}
 	}
 
-	//¹¹ÔìÖĞ¼ä½á¹û¾ØÕó
+	//æ„é€ ä¸­é—´ç»“æœçŸ©é˜µ
 	v = new double*[LAYERNUMS];
-	v[0] = NULL;//µÚÒ»ĞĞÖ¸ÏòÊäÈëx¡¾i]
+	v[0] = NULL;//ç¬¬ä¸€è¡ŒæŒ‡å‘è¾“å…¥xã€i]
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
 		v[i] = new double[layerNum[i]];
 	}
-	//Îó²î¾ØÕó
+	//è¯¯å·®çŸ©é˜µ
 	e = new double*[LAYERNUMS];
-	e[0] = NULL;//µÚ1²ãÎªÊäÈë²ãÎŞÎó²î
+	e[0] = NULL;//ç¬¬1å±‚ä¸ºè¾“å…¥å±‚æ— è¯¯å·®
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
 		e[i] = new double[layerNum[i]];
@@ -99,18 +99,18 @@ void ANN::Init()
 	y = new double[layerNum[LAYERNUMS - 1]];
 }
 
-ANN::~ANN()//É¾³ı¶¯Ì¬·ÖÅäµÄÊı×é
+ANN::~ANN()//åˆ é™¤åŠ¨æ€åˆ†é…çš„æ•°ç»„
 {
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
-		//É¾³ıÈ¨Öµ¾ØÕó
+		//åˆ é™¤æƒå€¼çŸ©é˜µ
 		for (int j = 0; j < layerNum[i - 1]; j++)
 		{
 			delete[]w[i - 1][j];
 		}
 		delete[]w[i - 1];
 
-		//É¾³ıãĞÖµ£¬ÖĞ¼ä½á¹û£¬Îó²î¾ØÕó
+		//åˆ é™¤é˜ˆå€¼ï¼Œä¸­é—´ç»“æœï¼Œè¯¯å·®çŸ©é˜µ
 		delete[]b[i];
 		delete[]v[i];
 		delete[]e[i];
@@ -121,7 +121,7 @@ ANN::~ANN()//É¾³ı¶¯Ì¬·ÖÅäµÄÊı×é
 	delete[]v;
 	delete[]e;
 
-	//	É¾³ı ÑµÁ·Ñù±¾ÊäÈë Êä³ö
+	//	åˆ é™¤ è®­ç»ƒæ ·æœ¬è¾“å…¥ è¾“å‡º
 	//for (int i = 0; i < N; i++)
 	//{
 	//	delete[]x[i];
@@ -136,7 +136,7 @@ ANN::~ANN()//É¾³ı¶¯Ì¬·ÖÅäµÄÊı×é
 	delete[] layerNum;
 }
 
-//Éè¶¨ÑµÁ·¼¯
+//è®¾å®šè®­ç»ƒé›†
 void ANN::SetTrainData(int n, double** input, double**output)
 {
 	this->N = n;
@@ -144,7 +144,7 @@ void ANN::SetTrainData(int n, double** input, double**output)
 	this->d = output;
 }
 
-//µ¼ÈëÊı¾İ
+//å¯¼å…¥æ•°æ®
 bool ANN::LoadData(char* filename)
 {
 	std::ifstream infile(filename);
@@ -157,10 +157,10 @@ bool ANN::LoadData(char* filename)
 
 	width = abs(max - min);
 	mid = (max + min) / 2;
-	/*¶ÁÈ¡²ãÊı Ã¿²ã½ÚµãÊı*/
-	infile >> this->LAYERNUMS;//¶ÁÈ¡²ãÊı
+	/*è¯»å–å±‚æ•° æ¯å±‚èŠ‚ç‚¹æ•°*/
+	infile >> this->LAYERNUMS;//è¯»å–å±‚æ•°
 	layerNum = new int[LAYERNUMS];
-	//¶ÁÈ¡Ã¿²ã½ÚµãÊı
+	//è¯»å–æ¯å±‚èŠ‚ç‚¹æ•°
 	for (int i = 0; i < LAYERNUMS; i++)
 	{
 		infile >> layerNum[i];
@@ -169,7 +169,7 @@ bool ANN::LoadData(char* filename)
 	return true;
 }
 
-//Êä³öµ½ÎÄ¼ş
+//è¾“å‡ºåˆ°æ–‡ä»¶
 void ANN::Print(char* filename)const
 {
 	std::ofstream output(filename);
@@ -193,12 +193,12 @@ void ANN::Print(char* filename)const
 	output << "\t" << layerNum[LAYERNUMS] << endl;
 }
 
-//Êä³öÈ¨Öµ¾ØÕó
+//è¾“å‡ºæƒå€¼çŸ©é˜µ
 void ANN::Print_w()const
 {
 	using namespace std;
 
-	cout << "È¨Öµ¾ØÕó£º" << endl;
+	cout << "æƒå€¼çŸ©é˜µï¼š" << endl;
 	for (int i = 0; i < LAYERNUMS - 1; i++)
 	{
 		cout << i << endl;
@@ -216,11 +216,11 @@ void ANN::Print_w()const
 	}
 }
 
-//Êä³öãĞÖµ¾ØÕó
+//è¾“å‡ºé˜ˆå€¼çŸ©é˜µ
 void ANN::Print_b()const
 {
 	using namespace std;
-	cout << "ãĞÖµ¾ØÕó:" << endl;
+	cout << "é˜ˆå€¼çŸ©é˜µ:" << endl;
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
 		cout << i << endl;
@@ -230,11 +230,11 @@ void ANN::Print_b()const
 		}
 	}
 }
-//Êä³öÎó²î¾ØÕó
+//è¾“å‡ºè¯¯å·®çŸ©é˜µ
 void ANN::Print_e()const
 {
 	using namespace std;
-	cout << "Îó²î¾ØÕó:" << endl;
+	cout << "è¯¯å·®çŸ©é˜µ:" << endl;
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
 		cout << i << endl;
@@ -244,11 +244,11 @@ void ANN::Print_e()const
 		}
 	}
 }
-//Êä³öËùÓĞ½ÚµãÖµ
+//è¾“å‡ºæ‰€æœ‰èŠ‚ç‚¹å€¼
 void ANN::Print_v()const
 {
 	using namespace std;
-	cout << "ÖĞ¼äÖµ:" << endl;
+	cout << "ä¸­é—´å€¼:" << endl;
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
 		cout << i << endl;
@@ -259,7 +259,7 @@ void ANN::Print_v()const
 	}
 }
 
-//¿ªÊ¼ÑµÁ·
+//å¼€å§‹è®­ç»ƒ
 bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTimes)
 {
 	this->th = th;
@@ -274,22 +274,22 @@ bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTim
 		for (int n = 0; n < N; n++)
 		{
 			v[0] = x[n];
-			for (int i = 1; i < LAYERNUMS; i++)//´ÓµÚÒ»Òş²ã£¨µÚ¶ş²ã£©µ½Êä³ö²ã£¬ i²ãÊı
+			for (int i = 1; i < LAYERNUMS; i++)//ä»ç¬¬ä¸€éšå±‚ï¼ˆç¬¬äºŒå±‚ï¼‰åˆ°è¾“å‡ºå±‚ï¼Œ iå±‚æ•°
 			{
-				for (int j = 0; j < layerNum[i]; j++)//±éÀú¸Ã²ãµÄËùÓĞ½Úµã£¬j½Úµã±àºÅ
+				for (int j = 0; j < layerNum[i]; j++)//éå†è¯¥å±‚çš„æ‰€æœ‰èŠ‚ç‚¹ï¼ŒjèŠ‚ç‚¹ç¼–å·
 				{
 					tempX = 0;
-					for (int k = 0; k < layerNum[i - 1]; k++)//¼ÆËãÇ°Ò»²ã´«µİ¹ıÀ´µÄ¼ÓÈ¨Öµ£¬kÉÏÒ»²ã½Úµã±àºÅ
+					for (int k = 0; k < layerNum[i - 1]; k++)//è®¡ç®—å‰ä¸€å±‚ä¼ é€’è¿‡æ¥çš„åŠ æƒå€¼ï¼Œkä¸Šä¸€å±‚èŠ‚ç‚¹ç¼–å·
 					{
 						tempX += v[i - 1][k] * w[i - 1][k][j];
 					}
 
-					v[i][j] = Sigmoid(tempX - b[i][j]);//¼ÆËã¸Ã½ÚµãµÄÖµ
+					v[i][j] = Sigmoid(tempX - b[i][j]);//è®¡ç®—è¯¥èŠ‚ç‚¹çš„å€¼
 
 				}
 			}
 
-			//¼ÆËã×îºóÒ»²ã(Êä³ö²ã)Îó²î
+			//è®¡ç®—æœ€åä¸€å±‚(è¾“å‡ºå±‚)è¯¯å·®
 			for (int i = 0; i < layerNum[LAYERNUMS - 1]; i++)
 			{
 				y[i] = (v[LAYERNUMS - 1][i] - 0.5)*width + mid;
@@ -297,7 +297,7 @@ bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTim
 
 				error += e[LAYERNUMS - 1][i] * e[LAYERNUMS - 1][i];
 
-				e[LAYERNUMS - 1][i] *= v[LAYERNUMS - 1][i] * (1 - v[LAYERNUMS - 1][i]);//ÇóÎó²î²ÎÊı
+				e[LAYERNUMS - 1][i] *= v[LAYERNUMS - 1][i] * (1 - v[LAYERNUMS - 1][i]);//æ±‚è¯¯å·®å‚æ•°
 			}
 			//
 			BackError(n);
@@ -306,14 +306,14 @@ bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTim
 		error /= N;
 		if (counter % 20000 == 0)
 		{
-			std::cout << "ÑµÁ·" << counter << "´ÎµÄÎó²îÆ½·½ºÍÆ½¾ùÖµ" << error << std::endl;
+			std::cout << "è®­ç»ƒ" << counter << "æ¬¡çš„è¯¯å·®å¹³æ–¹å’Œå¹³å‡å€¼" << error << std::endl;
 			Print_b();
 			Print_w();
 		}
 
 		errortxt << error << std::endl;
 
-		if (error <= maxError)//Îó²îÆ½·½ºÍĞ¡ÓÚÄ¿±êÒªÇó
+		if (error <= maxError)//è¯¯å·®å¹³æ–¹å’Œå°äºç›®æ ‡è¦æ±‚
 		{
 			errortxt.close();
 			return true;
@@ -326,11 +326,11 @@ bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTim
 }
 
 
-//Îó²î·´´«µ÷ÕûÍøÂç
+//è¯¯å·®åä¼ è°ƒæ•´ç½‘ç»œ
 void ANN::BackError(int n)
 {
 	//	Print_v();
-	/*Îó²î·´´«*/
+	/*è¯¯å·®åä¼ */
 	for (int i = LAYERNUMS - 2; i > 0; --i)
 	{
 		for (int j = 0; j < layerNum[i]; j++)
@@ -348,12 +348,12 @@ void ANN::BackError(int n)
 	}
 	//	Print_e();
 	//	Print_w();
-	/*ĞŞ¸ÄÈ¨Öµ*/
-	for (int i = 0; i < LAYERNUMS - 1; i++)//ÊäÈë²ãµ½×îºóÒ»¸öÒş²ã
+	/*ä¿®æ”¹æƒå€¼*/
+	for (int i = 0; i < LAYERNUMS - 1; i++)//è¾“å…¥å±‚åˆ°æœ€åä¸€ä¸ªéšå±‚
 	{
-		for (int j = 0; j < layerNum[i]; j++)//¸Ã²ãËùÓĞ½Úµã
+		for (int j = 0; j < layerNum[i]; j++)//è¯¥å±‚æ‰€æœ‰èŠ‚ç‚¹
 		{
-			for (int k = 0; k < layerNum[i + 1]; k++)//ÏÂÒ»²ãËùÓĞ½Úµã
+			for (int k = 0; k < layerNum[i + 1]; k++)//ä¸‹ä¸€å±‚æ‰€æœ‰èŠ‚ç‚¹
 			{
 				w[i][j][k] += th*e[i + 1][k] * v[i][j];
 			}
@@ -361,7 +361,7 @@ void ANN::BackError(int n)
 	}
 	//	Print_w();
 
-	/*ãĞÖµĞŞ¸Ä*/
+	/*é˜ˆå€¼ä¿®æ”¹*/
 
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
@@ -382,21 +382,21 @@ void ANN::Test(double* xin, double* yout)
 {
 	double tempX = 0;
 	v[0] = xin;
-	for (int i = 1; i < LAYERNUMS; i++)//´ÓµÚÒ»Òş²ã£¨µÚ¶ş²ã£©µ½Êä³ö²ã£¬ i²ãÊı
+	for (int i = 1; i < LAYERNUMS; i++)//ä»ç¬¬ä¸€éšå±‚ï¼ˆç¬¬äºŒå±‚ï¼‰åˆ°è¾“å‡ºå±‚ï¼Œ iå±‚æ•°
 	{
-		for (int j = 0; j < layerNum[i]; j++)//±éÀú¸Ã²ãµÄËùÓĞ½Úµã£¬j½Úµã±àºÅ
+		for (int j = 0; j < layerNum[i]; j++)//éå†è¯¥å±‚çš„æ‰€æœ‰èŠ‚ç‚¹ï¼ŒjèŠ‚ç‚¹ç¼–å·
 		{
 			tempX = 0;
-			for (int k = 0; k < layerNum[i - 1]; k++)//¼ÆËãÇ°Ò»²ã´«µİ¹ıÀ´µÄ¼ÓÈ¨Öµ£¬kÉÏÒ»²ã½Úµã±àºÅ
+			for (int k = 0; k < layerNum[i - 1]; k++)//è®¡ç®—å‰ä¸€å±‚ä¼ é€’è¿‡æ¥çš„åŠ æƒå€¼ï¼Œkä¸Šä¸€å±‚èŠ‚ç‚¹ç¼–å·
 			{
 				tempX += v[i - 1][k] * w[i - 1][k][j];
 			}
 
-			v[i][j] = Sigmoid(tempX - b[i][j]);//¼ÆËã¸Ã½ÚµãµÄÖµ
+			v[i][j] = Sigmoid(tempX - b[i][j]);//è®¡ç®—è¯¥èŠ‚ç‚¹çš„å€¼
 		}
 	}
 
-	//¼ÆËãy
+	//è®¡ç®—y
 	for (int i = 0; i < layerNum[LAYERNUMS - 1]; i++)
 	{
 		yout[i] = (v[LAYERNUMS - 1][i] - 0.5)*width + mid;
@@ -412,7 +412,7 @@ void ANN::Test(char* filename)
 
 	if (!input.good())
 	{
-		output << filename << "´ò¿ªÒì³£";
+		output << filename << "æ‰“å¼€å¼‚å¸¸";
 		output.close();
 		return;
 	}
@@ -449,6 +449,6 @@ void ANN::Test(char* filename)
 #endif
 }
 	output.close();
-	std::cout << "½á¹ûÊä³öÓÚtestoutput.txtÖĞ\n";
+	std::cout << "ç»“æœè¾“å‡ºäºtestoutput.txtä¸­\n";
 }
 #endif

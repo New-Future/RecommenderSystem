@@ -1,13 +1,13 @@
-#include "../RecommenderSystem/def.h"
+ï»¿#include "../RecommenderSystem/def.h"
 int amount = 0;
 std::set<ID_TYPE> RateSet;
-//¶ÁÈëÑµÁ·¼¯
+//è¯»å…¥è®­ç»ƒé›†
 USER_RATE_LIST ReadTrain(char* filename)
 {
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "ÎÄ¼þ´ò¿ª³ö´í";
+		cout << "æ–‡ä»¶æ‰“å¼€å‡ºé”™";
 		exit(1);
 	}
 	ID_TYPE userid, item;
@@ -31,19 +31,19 @@ USER_RATE_LIST ReadTrain(char* filename)
 		}
 		rate_list.push_back(r);
 	}
-	cout << "ÓÃ»§Êý:" << rate_list.size() << " ;ÆÀ·ÖÊý: " << rate_count << " ÆäÖÐÎ´ÆÀ¼Û£¨0£©Êý:" << zero_count << endl
-		<< "ÉÌÆ·×ÜÊý:" << RateSet.size() << endl;
+	cout << "ç”¨æˆ·æ•°:" << rate_list.size() << " ;è¯„åˆ†æ•°: " << rate_count << " å…¶ä¸­æœªè¯„ä»·ï¼ˆ0ï¼‰æ•°:" << zero_count << endl
+		<< "å•†å“æ€»æ•°:" << RateSet.size() << endl;
 	input.close();
 	return rate_list;
 }
 
-//¶ÁÈëÊôÐÔ
+//è¯»å…¥å±žæ€§
 ATTR_MAP ReadAttr(char*filename)
 {
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "ÎÄ¼þ´ò¿ª³ö´í";
+		cout << "æ–‡ä»¶æ‰“å¼€å‡ºé”™";
 		exit(1);
 	}
 	ID_TYPE item;
@@ -76,20 +76,20 @@ ATTR_MAP ReadAttr(char*filename)
 			count++;
 		}
 	}
-	cout << "×ÜÊôÐÔ:" << amount << ";ÆäÖÐÓÐÐ§ÊôÐÔ×ÜÊý:" << count << endl;
+	cout << "æ€»å±žæ€§:" << amount << ";å…¶ä¸­æœ‰æ•ˆå±žæ€§æ€»æ•°:" << count << endl;
 	input.close();
 	return attrs;
 }
 
-//±£´æÆÀ·Ö
+//ä¿å­˜è¯„åˆ†
 void SaveRates(USER_RATE_LIST rates)
 {
 	ofstream out(RAETS_FILE, ios::binary);//user-item-rate
 	ofstream out_user_rate(USER_RATE_FILE, ios::binary);//user[item-rates]
 
-	ofstream trainfile(TRAIN_FILE, ios::binary);//ÑµÁ·¼¯
-	ofstream testfile(TEST_FILE, ios::binary);//²âÊÔÑéÖ¤¼¯
-	ofstream testTxt(TEST_INPUT_FILE);//²âÊÔÊäÈë
+	ofstream trainfile(TRAIN_FILE, ios::binary);//è®­ç»ƒé›†
+	ofstream testfile(TEST_FILE, ios::binary);//æµ‹è¯•éªŒè¯é›†
+	ofstream testTxt(TEST_INPUT_FILE);//æµ‹è¯•è¾“å…¥
 
 	ID_TYPE size = rates.size(), trainCount = 0, testCount = 0, n = 0, i = 0;
 	out.write((char*)&amount, ID_LEN);
@@ -98,7 +98,7 @@ void SaveRates(USER_RATE_LIST rates)
 	trainfile.write((char*)&size, ID_LEN);
 	for (auto r : rates)
 	{
-		//Öð¸öÓÃ»§Ð´Èë
+		//é€ä¸ªç”¨æˆ·å†™å…¥
 		n = r.N;
 		out_user_rate.write((char*)&n, ID_LEN);
 		n = n / 10;
@@ -109,7 +109,7 @@ void SaveRates(USER_RATE_LIST rates)
 		trainfile.write((char*)&n, ID_LEN);
 		for (int i = 0; i < r.N; i++)
 		{
-			//Öð¸öÆÀ·ÖÐ´Èë
+			//é€ä¸ªè¯„åˆ†å†™å…¥
 			out.write((char*)&r.user, ID_LEN).
 				write((char*)&r.ratings[i].item, ID_LEN).
 				write((char*)&r.ratings[i].rank, RATE_LEN);
@@ -118,7 +118,7 @@ void SaveRates(USER_RATE_LIST rates)
 
 			if ((i + 1) % 10 == 0)
 			{
-				//²âÊÔ¼¯
+				//æµ‹è¯•é›†
 				testfile.write((char*)&r.ratings[i].item, ID_LEN)
 					.write((char*)&r.ratings[i].rank, RATE_LEN);
 				testTxt << r.ratings[i].item << endl;
@@ -126,7 +126,7 @@ void SaveRates(USER_RATE_LIST rates)
 			}
 			else
 			{
-				//ÑµÁ·¼¯
+				//è®­ç»ƒé›†
 				trainfile.write((char*)&r.ratings[i].item, ID_LEN)
 					.write((char*)&r.ratings[i].rank, RATE_LEN);
 				trainCount++;
@@ -138,12 +138,12 @@ void SaveRates(USER_RATE_LIST rates)
 	testTxt.close();
 	out_user_rate.close();
 	out.close();
-	cout << "\nÉú³ÉÑù±¾\n\tÑµÁ·¼¯:" << TRAIN_FILE << " (" << trainCount << " ×éÆÀ·Ö);\n\t²âÊÔ¼¯:"
-		<< TEST_FILE << " (" << testCount << " ×éÆÀ·Ö )" << endl
-		<< "\t¸ñÊ½»¯ÑµÁ·Êý¾Ý" << USER_RATE_FILE << endl;
+	cout << "\nç”Ÿæˆæ ·æœ¬\n\tè®­ç»ƒé›†:" << TRAIN_FILE << " (" << trainCount << " ç»„è¯„åˆ†);\n\tæµ‹è¯•é›†:"
+		<< TEST_FILE << " (" << testCount << " ç»„è¯„åˆ† )" << endl
+		<< "\tæ ¼å¼åŒ–è®­ç»ƒæ•°æ®" << USER_RATE_FILE << endl;
 }
 
-//±£´æÊôÐÔ
+//ä¿å­˜å±žæ€§
 void SaveAtrrs(ATTR_MAP attrs)
 {
 	ofstream out(ITEM_ATTR_FILE, ios::binary);
@@ -157,26 +157,26 @@ void SaveAtrrs(ATTR_MAP attrs)
 	}
 	out.close();
 }
-//µÚÒ»¸ö²ÎÊýÑµÁ·Ñù±¾Êý¾ÝÎÄ¼þ
-//µÚ¶þ¸ö²ÎÊýÑµÁ·ÊôÐÔÊý¾ÝÎÄ¼þ
+//ç¬¬ä¸€ä¸ªå‚æ•°è®­ç»ƒæ ·æœ¬æ•°æ®æ–‡ä»¶
+//ç¬¬äºŒä¸ªå‚æ•°è®­ç»ƒå±žæ€§æ•°æ®æ–‡ä»¶
 int main(int argc, char** argv)
 {
 	system("mkdir \"..\\data\"");
-	cout << "ÎÄ¼þÍ³¼ÆºÍÊäÈë¸ñÊ½»¯Éú³É\n \t²ÎÊý1:ÑµÁ·ÎÄ±¾Î»ÖÃ;\t²ÎÊý2:ÊôÐÔÎÄ±¾Î»ÖÃ\n";
+	cout << "æ–‡ä»¶ç»Ÿè®¡å’Œè¾“å…¥æ ¼å¼åŒ–ç”Ÿæˆ\n \tå‚æ•°1:è®­ç»ƒæ–‡æœ¬ä½ç½®;\tå‚æ•°2:å±žæ€§æ–‡æœ¬ä½ç½®\n";
 
 	char* train_file = (argc > 1) ? argv[1] : "..\\data\\train.txt";
 	char* attr_file = (argc > 2) ? argv[2] : "..\\data\\itemAttribute.txt";
 
-	cout << "\nÍ³¼ÆÔ­Ê¼Êý¾ÝÎÄ±¾" << train_file << "ºÍ¹¹½¨ÑµÁ·Êý¾Ý:\n";
+	cout << "\nç»Ÿè®¡åŽŸå§‹æ•°æ®æ–‡æœ¬" << train_file << "å’Œæž„å»ºè®­ç»ƒæ•°æ®:\n";
 	auto rate = ReadTrain(train_file);
 	SaveRates(rate);
 	rate.clear();
 
-	cout << "\nÍ³¼ÆÔªËØÊôÐÔÎÄ¼þ" << attr_file << endl;
+	cout << "\nç»Ÿè®¡å…ƒç´ å±žæ€§æ–‡ä»¶" << attr_file << endl;
 	auto attrs = ReadAttr(attr_file);
 	SaveAtrrs(attrs);
 	attrs.clear();
-	cout << "\nÊý¾ÝÉú³ÉÍê³É\n";
+	cout << "\næ•°æ®ç”Ÿæˆå®Œæˆ\n";
 	
 	RateSet.clear();
 	system("pause");

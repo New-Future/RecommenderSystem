@@ -1,13 +1,13 @@
-#include "../RecommenderSystem/def.h"
+ï»¿#include "../RecommenderSystem/def.h"
 #include <math.h>
 
-//¼ÆËãÊä³öÓë¶ÔÓ¦ÎÄ¼þµÄrmse
+//è®¡ç®—è¾“å‡ºä¸Žå¯¹åº”æ–‡ä»¶çš„rmse
 double RMSE(char* binnaryfile, char* texfile)
 {
 	ifstream accuracy(binnaryfile, ios::binary), estimates(texfile);
 	if (!accuracy.is_open() || !estimates.is_open())
 	{
-		cout << "ÎÄ¼þ´ò¿ª³ö´í";
+		cout << "æ–‡ä»¶æ‰“å¼€å‡ºé”™";
 		exit(1);
 	}
 	ID_TYPE item, len;
@@ -18,12 +18,12 @@ double RMSE(char* binnaryfile, char* texfile)
 
 	accuracy.read((char*)&len, ID_LEN);
 	while (len-- > 0)
-	{//Öð¸öÓÃ»§¶ÁÈ¡
-		estimates >> templine;//Ìø¹ýÒ»ÐÐ
+	{//é€ä¸ªç”¨æˆ·è¯»å–
+		estimates >> templine;//è·³è¿‡ä¸€è¡Œ
 		accuracy.read((char*)&n, ID_LEN);
 		N += n;
 		while (n-- > 0)
-		{	//Öð¸öÆÀ·Ö±È½Ï
+		{	//é€ä¸ªè¯„åˆ†æ¯”è¾ƒ
 			accuracy.read((char*)&item, ID_LEN).read((char*)&acc_rate, RATE_LEN);
 			estimates >> item >> est_rate;
 			e = abs(est_rate - acc_rate);
@@ -34,13 +34,13 @@ double RMSE(char* binnaryfile, char* texfile)
 	estimates.close();
 	accuracy.close();
 	rmse = sqrt((double)rmse / N);
-	cout << "ÆÀ¹À×ÜÊý" << N << " ;Æ½¾ù²î" << (double)error / N << " ;RMSE:" << rmse << endl;
+	cout << "è¯„ä¼°æ€»æ•°" << N << " ;å¹³å‡å·®" << (double)error / N << " ;RMSE:" << rmse << endl;
 	return rmse;
 }
 
 int main(int argc, char** argv)
 {
-	cout << "RMSE¼ÆËã\n \t²ÎÊý1:²âÊÔÊä³öÎÄ±¾;\t²ÎÊý2:±ê×¼²Î¿¼ÆÀ·Ö(¶þ½øÖÆÎÄ¼þ)\n";
+	cout << "RMSEè®¡ç®—\n \tå‚æ•°1:æµ‹è¯•è¾“å‡ºæ–‡æœ¬;\tå‚æ•°2:æ ‡å‡†å‚è€ƒè¯„åˆ†(äºŒè¿›åˆ¶æ–‡ä»¶)\n";
 	char* txtfile = (argc > 1) ? argv[1] : TEST_OUTPUT_FILE;
 	char* bin = (argc > 2) ? argv[2] : TEST_FILE;
 	RMSE(bin, txtfile);

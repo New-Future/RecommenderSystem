@@ -1,54 +1,54 @@
-#include"ANN.h"
-#include "com.h"
-int amount = 0;
-USER_RATE_LIST ReadTrain(char* filname)
+ï»¿#include"ANN.h"
+#include "../RecommenderSystem/def.h"
+//int amount = 0;
+//USER_RATE_LIST ReadTrain(char* filname)
+//{
+//	ifstream input(filname);
+//	if (!input.is_open())
+//	{
+//		cout << "æ–‡ä»¶æ‰“å¼€å‡ºé”™";
+//		exit(1);
+//	}
+//	ID_TYPE userid, item;
+//	RATE_TYPE rank;
+//	USER_RATE_LIST rate_list;
+//	int n, rate_count = 0, zero_count = 0;
+//	char c;
+//	MAP items;
+//	while (input >> userid >> c >> n)
+//	{
+//		rate_count += n;
+//		UserRate r(userid, n);
+//		for (int i = 0; i < n; i++)
+//		{
+//			input >> item >> rank;
+//			items[item]++;
+//			zero_count += (rank == 0);
+//			r.ratings[i] = { item,rank };
+//		}
+//		rate_list.push_back(r);
+//	}
+//	cout << "ç”¨æˆ·æ•°:" << rate_list.size() << " ;è¯„åˆ†æ•°" << rate_count << " å…¶ä¸­æœªè¯„ä»·ï¼ˆ0ï¼‰æ•°" << zero_count << endl
+//		<< "å•†å“æ•°" << items.size() << endl;
+//	amount = rate_count - zero_count;
+//	return rate_list;
+//}
+void Train(char* trainFile)
 {
-	ifstream input(filname);
-	if (!input.is_open())
-	{
-		cout << "ÎÄ¼þ´ò¿ª³ö´í";
-		exit(1);
-	}
-	ID_TYPE userid, item;
-	RATE_TYPE rank;
-	USER_RATE_LIST rate_list;
-	int n, rate_count = 0, zero_count = 0;
-	char c;
-	MAP items;
-	while (input >> userid >> c >> n)
-	{
-		rate_count += n;
-		UserRate r(userid, n);
-		for (int i = 0; i < n; i++)
-		{
-			input >> item >> rank;
-			items[item]++;
-			zero_count += (rank == 0);
-			r.ratings[i] = { item,rank };
-		}
-		rate_list.push_back(r);
-	}
-	cout << "ÓÃ»§Êý:" << rate_list.size() << " ;ÆÀ·ÖÊý" << rate_count << " ÆäÖÐÎ´ÆÀ¼Û£¨0£©Êý" << zero_count << endl
-		<< "ÉÌÆ·Êý" << items.size() << endl;
-	amount = rate_count - zero_count;
-	return rate_list;
-}
-void main()
-{
-	char* train = "..\\data\\train.txt";
-
 	int layerNum = 4;
-	int layers[] = { 2, 4, 6, 1 };
+	int layers[] = { 4, 5, 4, 1 };
 	ANN ann(layerNum, layers, 0, 100);
 
-
-	auto rates = ReadTrain(train);
-
-	double** input = new double*[amount];
-	double** output = new double*[amount];
-	int k = 0;
-	for (auto r : rates)
+	int n, count=0,k=0;
+	auto rates = LoadRates(trainFile, n);
+	auto attr = LoadAttr();
+	//double** input = new double*[amount];
+	//double** output = new double*[amount];
+	//int k = 0;
+	for (size_t i = 0; i < n; i++)
 	{
+		count += rates[i].size();
+	}
 		for (int i = 0; i < r.N; i++)
 		{
 			if (r.ratings[i].rank > 0)
@@ -64,8 +64,14 @@ void main()
 	}
 	rates.clear();
 	ann.SetTrainData(amount, input, output);
-	ann.Train("log.txt", 0.5);
+	ann.Train("log.txt", 0.5, 10);
 	ann.Print("m.txt");
 	ann.Print_e();
+}
+void main()
+{
+	char* train = TRAIN_FILE;
+
+
 	system("pause");
 }

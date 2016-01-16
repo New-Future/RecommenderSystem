@@ -1,4 +1,4 @@
-#include "def.h"
+ï»¿#include "def.h"
 //
 //RANK_LIST * LoadRates(char* file, int & LEN)
 //{
@@ -7,7 +7,7 @@
 //	ID_TYPE  n, i = 0;
 //	RANK_LIST *rates = new RANK_LIST[LEN];
 //	do
-//	{//Öğ¸öÓÃ»§¶ÁÈ¡
+//	{//é€ä¸ªç”¨æˆ·è¯»å–
 //		input.read((char*)&n, ID_LEN);
 //		rates[i] = RANK_LIST(n);
 //		for (auto r : rates[i])
@@ -20,7 +20,7 @@
 //	return rates;
 //}
 //
-////¶ÁÈëÊôĞÔ
+////è¯»å…¥å±æ€§
 //ATTR_MAP LoadAttr()
 //{
 //	ifstream input(ITEM_ATTR_FILE, ios::binary);
@@ -38,7 +38,7 @@
 //}
 
 
-//Êä³ö²âÊÔ½á¹û
+//è¾“å‡ºæµ‹è¯•ç»“æœ
 void SaveTest(RANK_LIST* rates, int n, char* filename = TEST_OUTPUT_FILE)
 {
 	ofstream output(filename);

@@ -1,6 +1,6 @@
-#include <math.h>
+ï»¿#include <math.h>
 #include"../RecommenderSystem/def.h"
-//¶þÔªÏßÐÔ»Ø¹éÇó½â
+//äºŒå…ƒçº¿æ€§å›žå½’æ±‚è§£
 //Y=beta0+beta1*X1+beta2*X2;
 double* linear(double *Y, double **X, int n, double*beta)
 {
@@ -52,7 +52,7 @@ double** analysis(ATTR_MAP attrs, RANK_LIST* rates, int n)
 		X[0] = new double[size];
 		X[1] = new double[size];
 		t = 0;
-		//¹¹½¨¾ØÕó
+		//æž„å»ºçŸ©é˜µ
 		for (auto r : rates[i])
 		{
 			Y[t] = r.rank;
@@ -60,7 +60,7 @@ double** analysis(ATTR_MAP attrs, RANK_LIST* rates, int n)
 			X[1][t] = attrs[r.item].attr2;
 			t++;
 		}
-		//ÏßÐÔ»Ø¹é¼ÆËã
+		//çº¿æ€§å›žå½’è®¡ç®—
 		linear(Y, X, size, beta[i]);
 		delete[] Y;
 		delete[] X[0];
@@ -96,30 +96,30 @@ USER_RATE_LIST LinearRate(double** beta, USER_RATE_LIST test, ATTR_MAP attrs)
 }
 int main(int argc, char** argv)
 {
-	cout << "ÏßÐÔ»Ø¹é·ÖÎö\n \t²ÎÊý1:¶þ½øÖÆÑµÁ·¼¯ÎÄ¼þ;\n\t²ÎÊý2:²âÊÔ¼¯ÎÄ¼þ\n\t²ÎÊý3:Êä³öÎÄ¼þ\n;";
+	cout << "çº¿æ€§å›žå½’åˆ†æž\n \tå‚æ•°1:äºŒè¿›åˆ¶è®­ç»ƒé›†æ–‡ä»¶;\n\tå‚æ•°2:æµ‹è¯•é›†æ–‡ä»¶\n\tå‚æ•°3:è¾“å‡ºæ–‡ä»¶\n";
 	int n;
 	char* trainfile = (argc > 1) ? argv[1] : TRAIN_FILE;
-	cout << "ÔØÈëÑµÁ·¼¯(" << trainfile << ")...\n";
+	cout << "è½½å…¥è®­ç»ƒé›†(" << trainfile << ")...\n";
 	auto rates = LoadRates(trainfile, n);
 
 
-	cout << "ÔØÈëitemÊôÐÔ(" << ITEM_ATTR_FILE << ")...\n";
+	cout << "è½½å…¥itemå±žæ€§(" << ITEM_ATTR_FILE << ")...\n";
 	auto attrs = LoadAttr();
 
-	cout << "¿ªÊ¼ÏßÐÔ»Ø¹é·ÖÎö...\n";
+	cout << "å¼€å§‹çº¿æ€§å›žå½’åˆ†æž...\n";
 	double** beta = analysis(attrs, rates, n);
 	delete[] rates;
 
 	char* betafile = "beta.txt";
-	cout << "·ÖÎöÍê³É£¬µ¼³öBETA¾ØÕó(" << betafile << ")...\n";
+	cout << "åˆ†æžå®Œæˆï¼Œå¯¼å‡ºBETAçŸ©é˜µ(" << betafile << ")...\n";
 	PrintBeta(beta, n, betafile);
 
 
 	char* testfile = (argc > 2) ? argv[2] : TEST_INPUT_FILE;
-	cout << "ÔØÈë²âÊÔ¼¯(" << testfile << ")...\n";
+	cout << "è½½å…¥æµ‹è¯•é›†(" << testfile << ")...\n";
 	auto test = ReadTest(testfile);
 
-	cout << "ÏßÐÔ»Ø¹é¼ÆËã...\n";
+	cout << "çº¿æ€§å›žå½’è®¡ç®—...\n";
 	LinearRate(beta, test, attrs);
 
 	for (size_t i = 0; i < n; i++)
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
 	delete[]beta;
 	attrs.clear();
 	char* output = (argc > 3) ? argv[3] : TEST_OUTPUT_FILE;
-	cout << "µ¼³ö²âÊÔ½á¹û£¨" << output << "£©\n";
+	cout << "å¯¼å‡ºæµ‹è¯•ç»“æžœï¼ˆ" << output << "ï¼‰\n";
 	SaveTest(test, output);
 	test.clear();
 	system("pause");
