@@ -49,15 +49,22 @@ typedef vector<Rank> RANK_LIST;
 #define ID_LEN sizeof(ID_TYPE)
 #define RATE_LEN sizeof(RATE_TYPE)
 #define ATTR_LEN sizeof(ATTR_TYPE)
-//三元数据
-#define RAETS_FILE "../data/rates.bin"
-//二元多组数据
-#define USER_RATE_FILE "../data/user_rates.bin"
+
+#define USER_RATE_FILE "../data/user_rate.bin"//二元多组数据
+#define USER_ITEM_RATE_FILE "../data/user_item_rate.bin"//三元数据
+#define USER_ITEM_ATTR_RATE_FILE "../data/user_item_atrr1_attr2_rate.bin"//五元组数据
 #define ITEM_ATTR_FILE "../data/attr.bin"
-#define TRAIN_FILE "../data/train.bin"
-#define TEST_FILE "../data/test.bin"
+#define TRAIN_FILE "../data/train.bin"//
+#define TRAIN_ANN_FILE "../data/train_ANN.bin"//ANN训练集(4输入，1输出)
+//#define TRAIN_ANN_FILE "../data/train_ANN.bin"//ANN训练集(4输入，1输出)
+#define TEST_BIN_FILE "../data/test.bin"
+#define TEST_TXT_FILE "../data/test_answers.txt"
 #define TEST_INPUT_FILE "../data/test_input.txt"
 #define TEST_OUTPUT_FILE "../data/test_output.txt"
+
+#ifndef  COM_FUNC
+#define COM_FUNC
+
 
 //读入文本格式数据
 USER_RATE_LIST ReadRate(char* filename)
@@ -65,7 +72,8 @@ USER_RATE_LIST ReadRate(char* filename)
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "文件打开出错";
+		cout << "打开数据文件" << filename << "出错";
+		system("pause");
 		exit(1);
 	}
 	ID_TYPE userid, item;
@@ -133,7 +141,8 @@ USER_RATE_LIST ReadTest(char* filename)
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "文件打开出错";
+		cout << "打开测试文件" << filename << "出错";
+		system("pause");
 		exit(1);
 	}
 	ID_TYPE userid;
@@ -165,3 +174,4 @@ void SaveTest(USER_RATE_LIST rates, char* filename = TEST_OUTPUT_FILE)
 	}
 	output.close();
 }
+#endif // ! COM_FUNC

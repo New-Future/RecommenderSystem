@@ -33,45 +33,109 @@
 //	amount = rate_count - zero_count;
 //	return rate_list;
 //}
-void Train(char* trainFile)
-{
-	int layerNum = 4;
-	int layers[] = { 4, 5, 4, 1 };
-	ANN ann(layerNum, layers, 0, 100);
+//int LoadTrainData(double** &input, double* &output, char* testFile, char* attrFile)
+//{
+//	auto test = ReadTest(testFile);
+//	auto attrs = LoadAttr(attrFile);
+//
+//	int n = 0;
+//	for (auto r : test)
+//	{
+//		n += r.N;
+//	}
+//	return n;
+//
+//}
 
-	int n, count=0,k=0;
-	auto rates = LoadRates(trainFile, n);
-	auto attr = LoadAttr();
-	//double** input = new double*[amount];
-	//double** output = new double*[amount];
-	//int k = 0;
-	for (size_t i = 0; i < n; i++)
+int LoadTrainData(double** &input, double* &output, char* trainFile)
+{
+	ifstream trainfile(trainFile, ios::binary);
+	ID_TYPE amount;
+	trainfile.read((char*)&amount, ID_LEN);
+	ID_TYPE user, item;
+	ATTR_TYPE attr1, attr2;
+	RATE_TYPE rate;
+	input = new double*[amount];
+	output = new double[amount];
+	for (size_t i = 0; i < amount; i++)
 	{
-		count += rates[i].size();
+		input[i] = new double[4];
+		trainfile.read((char*)&user, ID_LEN)
+			.read((char*)&item, ID_LEN)
+			.read((char*)&attr1, ATTR_LEN)
+			.read((char*)&attr2, ATTR_LEN)
+			.read((char*)&rate, RATE_LEN);
+		input[i][0] = user;
+		input[i][1] = item;
+		input[i][2] = attr1;
+		input[i][3] = attr2;
+		output[i] = rate;
 	}
-		for (int i = 0; i < r.N; i++)
+	trainfile.close();
+	return amount;
+}
+
+void Train(double** input, double* output, int N)
+{
+	ANN ann("annsetting.txt");//ann(layerNum, layers, 1.0);
+	cout << "数据载入完成,开始训练\n";
+	ann.SetTrainData(N, input, output);
+	ann.Train("ann.log");
+	ann.Print("ann.txt");
+	ann.Print_e();
+	ann.Print_w();
+}
+
+void Test(char* inputfile)
+{
+	ANN ann;
+	auto test = ReadTest(inputfile);
+	auto attrs = LoadAttr(ITEM_ATTR_FILE);
+	double input[4];
+	int n = 0;
+	for (auto r : test)
+	{
+		input[0] = r.user;
+		for (size_t i = 0; i < r.N; i++)
 		{
-			if (r.ratings[i].rank > 0)
-			{
-				input[k] = new double[2];
-				input[k][0] = r.user;
-				input[k][1] = r.ratings[i].item;
-				output[k] = new double[1];
-				output[k][0] = r.ratings[i].rank;
-				k++;
-			}
+			input[1] = r.ratings[i].item;
+			auto& attr = attrs[r.ratings[i].item];
+			input[2] = attr.attr1;
+			input[3] = attr.attr2;
+			r.ratings[i].rank = ann.Test(input);
 		}
 	}
-	rates.clear();
-	ann.SetTrainData(amount, input, output);
-	ann.Train("log.txt", 0.5, 10);
-	ann.Print("m.txt");
-	ann.Print_e();
-}
-void main()
-{
-	char* train = TRAIN_FILE;
 
+	SaveTest(test);
+	attrs.clear();
+}
+void main(int argc, char** argv)
+{
+
+
+	char choice;
+	if (argc > 1)
+	{
+		choice = argv[1][0];
+	}
+	else {
+		cout << "请选择测试或者训练？\n输入【1】测试结果,\n输入【0】训练网络\n请选择(回车直接训练): ";
+		choice = getchar();
+	}
+
+	if (choice == '1')
+	{
+		char* inputFile = TEST_INPUT_FILE;
+		Test(inputFile);
+	}
+	else
+	{
+		char* inputFile = TRAIN_ANN_FILE;
+		double ** input = nullptr;
+		double*output = nullptr;
+		int N = LoadTrainData(input, output, inputFile);
+		Train(input, output, N);
+	}
 
 	system("pause");
 }

@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 {
 	cout << "RMSE计算\n \t参数1:测试输出文本;\t参数2:标准参考评分(二进制文件)\n";
 	char* txtfile = (argc > 1) ? argv[1] : TEST_OUTPUT_FILE;
-	char* bin = (argc > 2) ? argv[2] : TEST_FILE;
+	char* bin = (argc > 2) ? argv[2] : TEST_BIN_FILE;
 	RMSE(bin, txtfile);
 	if (argc <= 1)system("pause");
 	return 0;

@@ -7,6 +7,7 @@
 #include<time.h>
 #include<fstream>
 #include<iostream>
+#include<iomanip>
 
 //sigmoid 函数
 inline double Sigmoid(double x)
@@ -17,7 +18,7 @@ inline double Sigmoid(double x)
 //获取随机数
 //max 随机数最大值
 //precision 精度
-inline double GetRandom(double max = 10, double precision = 100000)
+inline double GetRandom(double max = 1, double precision = 100000)
 {
 	return max*((rand() % (int)precision + 1) / precision);
 }
@@ -26,12 +27,81 @@ inline double GetRandom(double max = 10, double precision = 100000)
 ANN::ANN(char* data_filename)
 {
 	counter = 0;
-	if (LoadData(data_filename))
+	if (LoadSetting(data_filename))
 		this->Init();
+}
+//通过文件构造网络
+ANN::ANN()
+{
+	using namespace std;
+	ifstream input("ann.data");
+
+	if (!input.is_open() || !input.good())
+	{
+		cout << "网络初始化文件ann.data打开失败" << endl;
+		system("pause");
+		exit(1);
+	}
+	//输出放大
+
+	input >> this->mid >> this->width;
+	/*读取层数 每层节点数*/
+
+	input >> this->LAYERNUMS;//读取层数
+	this->layerNum = new int[this->LAYERNUMS];
+	//读取每层节点数
+	for (int i = 0; i < this->LAYERNUMS; i++)
+	{
+		input >> layerNum[i];
+	}
+
+	//初始化阈值矩阵
+	b = new double*[LAYERNUMS];
+	b[0] = NULL;//第一层为输入层无阈值
+	for (int i = 1; i < LAYERNUMS; i++)
+	{
+		b[i] = new double[layerNum[i]];
+		for (int j = 0; j < layerNum[i]; j++)
+		{
+			input >> b[i][j];
+		}
+	}
+
+	//权值矩阵
+	w = new double**[LAYERNUMS];
+	w[LAYERNUMS - 1] = NULL;//最后一层为输出层之后无权值
+	for (int i = 0; i < LAYERNUMS - 1; i++)
+	{
+		w[i] = new double*[layerNum[i]];
+		for (int j = 0; j < layerNum[i]; j++)
+		{
+			w[i][j] = new double[layerNum[i + 1]];
+			for (int k = 0; k < layerNum[i + 1]; k++)
+			{
+				input >> w[i][j][k];
+			}
+		}
+	}
+	//构造中间结果矩阵
+	v = new ANN_INPUT_TYPE*[LAYERNUMS];
+	v[0] = NULL;//第一行指向输入x[i]
+	for (int i = 1; i < LAYERNUMS; i++)
+	{
+		v[i] = new ANN_INPUT_TYPE[layerNum[i]];
+	}
+	//误差矩阵
+	e = new double*[LAYERNUMS];
+	e[0] = NULL;//第1层为输入层无误差
+	for (int i = 1; i < LAYERNUMS; i++)
+	{
+		e[i] = new double[layerNum[i]];
+	}
+	input.close();
+
 }
 
 //构造网络
-ANN::ANN(int n, int* layers, double max, double min)
+ANN::ANN(int n, int* layers, ANN_OUTPUT_TYPE max, ANN_OUTPUT_TYPE min)
 {
 	counter = 0;
 	width = abs(max - min);
@@ -52,8 +122,7 @@ ANN::ANN(int n, int* layers, double max, double min)
 void ANN::Init()
 {
 	srand((unsigned)time(0));//随机种子
-
-							 //初始化权值矩阵
+						 //初始化权值矩阵
 	w = new double**[LAYERNUMS];//权值矩阵
 	w[LAYERNUMS - 1] = NULL;//最后一层为输出层之后无权值
 	for (int i = 0; i < LAYERNUMS - 1; i++)
@@ -82,11 +151,11 @@ void ANN::Init()
 	}
 
 	//构造中间结果矩阵
-	v = new double*[LAYERNUMS];
-	v[0] = NULL;//第一行指向输入x【i]
+	v = new ANN_INPUT_TYPE*[LAYERNUMS];
+	v[0] = NULL;//第一行指向输入x[i]
 	for (int i = 1; i < LAYERNUMS; i++)
 	{
-		v[i] = new double[layerNum[i]];
+		v[i] = new ANN_INPUT_TYPE[layerNum[i]];
 	}
 	//误差矩阵
 	e = new double*[LAYERNUMS];
@@ -96,7 +165,7 @@ void ANN::Init()
 		e[i] = new double[layerNum[i]];
 	}
 
-	y = new double[layerNum[LAYERNUMS - 1]];
+	//y = new ANN_OUTPUT_TYPE[layerNum[LAYERNUMS - 1]];
 }
 
 ANN::~ANN()//删除动态分配的数组
@@ -137,15 +206,22 @@ ANN::~ANN()//删除动态分配的数组
 }
 
 //设定训练集
-void ANN::SetTrainData(int n, double** input, double**output)
+void ANN::SetTrainData(int n, ANN_INPUT_TYPE** input, ANN_OUTPUT_TYPE*output)
 {
 	this->N = n;
 	this->x = input;
+	//均一化
+	double min = mid - width / 2;
+	for (size_t i = 0; i < n; i++)
+	{
+		//std::cout << output[i] << std::endl;
+		output[i] = (output[i] - min) / width;
+	}
 	this->d = output;
 }
 
 //导入数据
-bool ANN::LoadData(char* filename)
+bool ANN::LoadSetting(char* filename)
 {
 	std::ifstream infile(filename);
 	if (!infile.good())
@@ -154,7 +230,9 @@ bool ANN::LoadData(char* filename)
 	}
 	double min, max;
 	infile >> min >> max;
+	infile >> this->th;
 
+	infile >> this->maxError>>this->maxTrainTimes;
 	width = abs(max - min);
 	mid = (max + min) / 2;
 	/*读取层数 每层节点数*/
@@ -230,6 +308,47 @@ void ANN::Print_b()const
 		}
 	}
 }
+void ANN::OutPutANN(char*file)const
+{
+	using namespace std;
+	ofstream out(file);
+	out << mid << "\t" << width << endl;
+	//
+	//输出层次关系
+	out << this->LAYERNUMS << endl;
+	for (size_t i = 0; i < this->LAYERNUMS; i++)
+	{
+		out << this->layerNum[i] << "\t";
+	}
+	out << endl << endl;
+
+	//out << "-----阈值矩阵-------" << endl;
+	for (int i = 1; i < LAYERNUMS; i++)
+	{
+		for (int j = 0; j < layerNum[i]; j++)
+		{
+			out << b[i][j] << "\t";
+		}
+		out << endl;
+	}
+	out << endl;
+	//输出权值矩阵
+	//out << "权值矩阵：" << endl;
+	for (int i = 0; i < LAYERNUMS - 1; i++)
+	{
+		for (int j = 0; j < layerNum[i]; j++)
+		{
+			out << "\t";
+			for (int k = 0; k < layerNum[i + 1]; k++)
+			{
+				out << w[i][j][k] << ",";
+			}
+			out << endl;
+		}
+		out << endl;
+	}
+	out.close();
+}
 //输出误差矩阵
 void ANN::Print_e()const
 {
@@ -260,12 +379,12 @@ void ANN::Print_v()const
 }
 
 //开始训练
-bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTimes)
+bool ANN::Train(char* LogFile)
 {
-	this->th = th;
+	//this->th = th;
 	std::ofstream errortxt(LogFile);
-	if (!errortxt.is_open())
-		return false;
+	//if (!errortxt.is_open())
+	//	return false;
 
 	while (++counter < maxTrainTimes)
 	{
@@ -289,37 +408,41 @@ bool ANN::Train(char* LogFile, double th, double maxError, const int maxTrainTim
 				}
 			}
 
-			//计算最后一层(输出层)误差
-			for (int i = 0; i < layerNum[LAYERNUMS - 1]; i++)
-			{
-				y[i] = (v[LAYERNUMS - 1][i] - 0.5)*width + mid;
-				e[LAYERNUMS - 1][i] = d[n][i] - y[i];
+			y = (v[LAYERNUMS - 1][0] - 0.5)*width + mid;
+			e[LAYERNUMS - 1][0] = d[n] - y;
 
-				error += e[LAYERNUMS - 1][i] * e[LAYERNUMS - 1][i];
+			error += e[LAYERNUMS - 1][0] * e[LAYERNUMS - 1][0];
 
-				e[LAYERNUMS - 1][i] *= v[LAYERNUMS - 1][i] * (1 - v[LAYERNUMS - 1][i]);//求误差参数
-			}
+			e[LAYERNUMS - 1][0] *= v[LAYERNUMS - 1][0] * (1 - v[LAYERNUMS - 1][0]);//求误差参数
+
 			//
 			BackError(n);
 
 		}// for N
 		error /= N;
-		if (counter % 20000 == 0)
-		{
-			std::cout << "训练" << counter << "次的误差平方和平均值" << error << std::endl;
-			Print_b();
-			Print_w();
-		}
+
 
 		errortxt << error << std::endl;
 
 		if (error <= maxError)//误差平方和小于目标要求
 		{
+			Print_b();
+			Print_w();
+			std::cout << "训练完成" << counter << "次的误差平方和平均值" << error << std::endl;
 			errortxt.close();
 			return true;
 		}
-		std::cout << error << std::endl;
-		Print_w();
+		else if ((counter) % 1000 == 0)
+		{
+			std::cout << "训练" << counter << "次的误差平方和平均值" << error << std::endl;
+			Print_b();
+			Print_w();
+		}
+		else if ((counter - 1) % 10 == 0)//调试
+		{
+			std::cout << counter << "次迭代训练，均一化误差为: " << std::setprecision(10) << error << std::endl;
+			OutPutANN("ann.data");
+		}
 	}
 	errortxt.close();
 	return false;
@@ -341,13 +464,15 @@ void ANN::BackError(int n)
 				//			std::cout << w[i][j][k] << "*" <<e[i+1][k] <<std::ends;
 				e[i][j] += w[i][j][k] * e[i + 1][k];
 			}
-			e[i][j] *= v[i][j] * (1 - v[i][j]);
+			e[i][j] *= v[i][j] * (1 - v[i][j]);//求导
 
 			//		std::cout << "(" << i << "," << j << ")" << e[i][j] << std::endl;
 		}
 	}
 	//	Print_e();
 	//	Print_w();
+
+	double th = (GetRandom(1) < error) ? (0.5*this->th) : this->th;
 	/*修改权值*/
 	for (int i = 0; i < LAYERNUMS - 1; i++)//输入层到最后一个隐层
 	{
@@ -378,7 +503,8 @@ int ANN::GetCounter()
 	return this->counter;
 }
 
-void ANN::Test(double* xin, double* yout)
+
+double ANN::Test(ANN_INPUT_TYPE* xin)
 {
 	double tempX = 0;
 	v[0] = xin;
@@ -395,60 +521,8 @@ void ANN::Test(double* xin, double* yout)
 			v[i][j] = Sigmoid(tempX - b[i][j]);//计算该节点的值
 		}
 	}
-
 	//计算y
-	for (int i = 0; i < layerNum[LAYERNUMS - 1]; i++)
-	{
-		yout[i] = (v[LAYERNUMS - 1][i] - 0.5)*width + mid;
-	}
-
-
-}
-
-void ANN::Test(char* filename)
-{
-	std::ifstream input(filename);
-	std::ofstream output("testoutput.txt");
-
-	if (!input.good())
-	{
-		output << filename << "打开异常";
-		output.close();
-		return;
-	}
-
-	double* x = new double[layerNum[0]];
-	double* y = new double[layerNum[LAYERNUMS - 1]];
-	while (!input.eof())
-	{
-		for (int i = 0; i < layerNum[0]; i++)
-		{
-			input >> x[i];
-#ifdef DEBUG
-			std::cout << x[i] << std::ends;
-#endif
-		}
-
-#ifdef DEBUG
-		std::cout << std::endl;
-#endif
-		Test(x, y);
-		for (int i = 0; i < layerNum[LAYERNUMS - 1]; i++)
-		{
-			output << y[i];
-			if (i + 1 < layerNum[LAYERNUMS - 1])
-				output << " ";
-			else
-				output << std::endl;
-#ifdef DEBUG
-			std::cout << y[i] << std::ends;
-#endif
-	}
-#ifdef DEBUG
-		std::cout << std::endl;
-#endif
-}
-	output.close();
-	std::cout << "结果输出于testoutput.txt中\n";
+	double y = (v[LAYERNUMS - 1][0] - 0.5)*width + mid;
+	return y;
 }
 #endif

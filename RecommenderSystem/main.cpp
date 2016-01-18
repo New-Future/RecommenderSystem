@@ -61,7 +61,7 @@ void main()
 	//auto trainRates = LoadRates(TRAIN_FILE, len);
 	//auto attrs = LoadAttr();
 	//cout << len;// << ends << attrs.size();
-	auto t = LoadRates(TEST_FILE, len);
+	auto t = LoadRates(TEST_BIN_FILE, len);
 	//auto r = ReadTest(TEST_INPUT_FILE);
 	SaveTest(t,len);
 	system("pause");

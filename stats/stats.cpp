@@ -7,7 +7,8 @@ USER_RATE_LIST ReadTrain(char* filename)
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "文件打开出错";
+		cout << "\n打开原始数据文件"<<filename<<"出错";
+		system("pause");
 		exit(1);
 	}
 	ID_TYPE userid, item;
@@ -84,14 +85,15 @@ ATTR_MAP ReadAttr(char*filename)
 //保存评分
 void SaveRates(USER_RATE_LIST rates)
 {
-	ofstream out(RAETS_FILE, ios::binary);//user-item-rate
+	ofstream out(USER_ITEM_RATE_FILE, ios::binary);//user-item-rate
 	ofstream out_user_rate(USER_RATE_FILE, ios::binary);//user[item-rates]
 
 	ofstream trainfile(TRAIN_FILE, ios::binary);//训练集
-	ofstream testfile(TEST_FILE, ios::binary);//测试验证集
+	ofstream testfile(TEST_BIN_FILE, ios::binary);//测试验证集
+	ofstream testAnswer(TEST_TXT_FILE);
 	ofstream testTxt(TEST_INPUT_FILE);//测试输入
 
-	ID_TYPE size = rates.size(), trainCount = 0, testCount = 0, n = 0, i = 0;
+	ID_TYPE size = rates.size(), trainCount = 0, testCount = 0, n = 0, uid = 0;
 	out.write((char*)&amount, ID_LEN);
 	out_user_rate.write((char*)&size, ID_LEN);
 	testfile.write((char*)&size, ID_LEN);
@@ -102,8 +104,9 @@ void SaveRates(USER_RATE_LIST rates)
 		n = r.N;
 		out_user_rate.write((char*)&n, ID_LEN);
 		n = n / 10;
-		testTxt << i++ << "|" << n << endl;
-
+		testTxt << uid << "|" << n << endl;
+		testAnswer << uid << "|" << n << endl;
+		++uid;
 		testfile.write((char*)&n, ID_LEN);
 		n = r.N - n;
 		trainfile.write((char*)&n, ID_LEN);
@@ -122,6 +125,7 @@ void SaveRates(USER_RATE_LIST rates)
 				testfile.write((char*)&r.ratings[i].item, ID_LEN)
 					.write((char*)&r.ratings[i].rank, RATE_LEN);
 				testTxt << r.ratings[i].item << endl;
+				testAnswer << r.ratings[i].item << "\t" << r.ratings[i].rank << endl;
 				testCount++;
 			}
 			else
@@ -136,13 +140,54 @@ void SaveRates(USER_RATE_LIST rates)
 	trainfile.close();
 	testfile.close();
 	testTxt.close();
+	testAnswer.close();
 	out_user_rate.close();
 	out.close();
 	cout << "\n生成样本\n\t训练集:" << TRAIN_FILE << " (" << trainCount << " 组评分);\n\t测试集:"
-		<< TEST_FILE << " (" << testCount << " 组评分 )" << endl
+		<< TEST_BIN_FILE << " (" << testCount << " 组评分 )" << endl
 		<< "\t格式化训练数据" << USER_RATE_FILE << endl;
 }
 
+void SaveANN(USER_RATE_LIST rates, ATTR_MAP attrs)
+{
+	ofstream outANN(TRAIN_ANN_FILE, ios::binary);//user-item-attr-rate
+	//ofstream testANN(TEST_ANN_FILE, ios::binary);//user-item-attr-rate
+	ofstream attrRate(USER_ITEM_ATTR_RATE_FILE, ios::binary);//
+
+	ID_TYPE size = rates.size(), n = 0;
+	Attr *tempAtt;
+	attrRate.write((char*)&amount, ID_LEN);
+	outANN.write((char*)&amount, ID_LEN);
+
+	for (auto r : rates)
+	{
+		for (size_t i = 0; i < r.N; i++)
+		{
+			//逐个评分写入
+			tempAtt = &attrs[r.ratings[i].item];
+			attrRate.write((char*)&r.user, ID_LEN).
+				write((char*)&r.ratings[i].item, ID_LEN).
+				write((char*)&(tempAtt->attr1), ATTR_LEN).
+				write((char*)&(tempAtt->attr2), ATTR_LEN).
+				write((char*)&r.ratings[i].rank, RATE_LEN);
+			if ((i + 1) % 10 != 0)
+			{
+				//测试集
+				n++;
+				outANN.write((char*)&r.user, ID_LEN).
+					write((char*)&r.ratings[i].item, ID_LEN).
+					write((char*)&(tempAtt->attr1), ATTR_LEN).
+					write((char*)&(tempAtt->attr2), ATTR_LEN).
+					write((char*)&r.ratings[i].rank, RATE_LEN);
+			}
+		}
+	}
+	outANN.seekp(0).write((char*)&n, ID_LEN);
+	outANN.close();
+	attrRate.close();
+
+	cout << "\n已生成ANN样本\n\t训练集:" << TRAIN_ANN_FILE << " (" << n << " 组评分)\n";
+}
 //保存属性
 void SaveAtrrs(ATTR_MAP attrs)
 {
@@ -162,22 +207,27 @@ void SaveAtrrs(ATTR_MAP attrs)
 int main(int argc, char** argv)
 {
 	system("mkdir \"..\\data\"");
-	cout << "文件统计和输入格式化生成\n \t参数1:训练文本位置;\t参数2:属性文本位置\n";
+	cout << "文件统计和输入格式化生成\n \t参数1:训练文本位置;\n\t参数2:属性文本位置\n";
 
 	char* train_file = (argc > 1) ? argv[1] : "..\\data\\train.txt";
 	char* attr_file = (argc > 2) ? argv[2] : "..\\data\\itemAttribute.txt";
 
-	cout << "\n统计原始数据文本" << train_file << "和构建训练数据:\n";
+	cout << "\n统计原始数据文本" << train_file << endl ;
 	auto rate = ReadTrain(train_file);
+	cout << "构建训练数据样本和测试样本";
 	SaveRates(rate);
-	rate.clear();
 
 	cout << "\n统计元素属性文件" << attr_file << endl;
 	auto attrs = ReadAttr(attr_file);
+	cout << "筛选和格式化属性，导出二进制数据" << endl;
 	SaveAtrrs(attrs);
+
+	cout << "\n生成ANN训练数据样本";
+	SaveANN(rate, attrs);
+	rate.clear();
 	attrs.clear();
 	cout << "\n数据生成完成\n";
-	
+
 	RateSet.clear();
 	system("pause");
 	return 0;

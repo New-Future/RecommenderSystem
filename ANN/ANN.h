@@ -1,83 +1,98 @@
-#pragma once
-//#define DEBUG //µ÷ÊÔÊ±¼ÓÔØ
+ï»¿#pragma once
+
+//#define DEBUG //è°ƒè¯•æ—¶åŠ è½½
+
+typedef  double ANN_INPUT_TYPE;
+typedef double ANN_OUTPUT_TYPE;
 class ANN
 {
 public:
 	/*
-	data_filename ÊäÈëÊı¾İµÄÎÄ¼şÃû
+	data_filename è¾“å…¥æ•°æ®çš„æ–‡ä»¶å
 	*/
-	ANN(char* data_filename);//¹¹ÔìbpÉñ¾­ÍøÂç	
-	ANN(int n, int* layerNumbers, double max = 1, double min = 0);
+	ANN(char* data_filename);
+	ANN();
+	//æ„é€ bpç¥ç»ç½‘ç»œ	
+	ANN(int n, int* layerNumbers, ANN_OUTPUT_TYPE max = 1, ANN_OUTPUT_TYPE min = 0);
 
-	/*//ÑµÁ·ÍøÂç
-	///logfile ¼ÇÂ¼Îó²îµÄÎÄ¼ş
-	/// thÑ§Ï°Ğ§ÂÊ(0,1)
-	///maxErrorÎó²îÉÏÏŞ
-	///maxTrainTimes×î´óÑµÁ·´ÎÊı
+	/*//è®­ç»ƒç½‘ç»œ
+	///logfile è®°å½•è¯¯å·®çš„æ–‡ä»¶
+	/// thå­¦ä¹ æ•ˆç‡(0,1)
+	///maxErrorè¯¯å·®ä¸Šé™
+	///maxTrainTimesæœ€å¤§è®­ç»ƒæ¬¡æ•°
 	*/
-	bool Train(char* logFile, double th = 0.2, double maxError = 0.01, const int maxTrainTimes = 1000000);
-	void SetTrainData(int N, double** input, double**output);
+	//bool Train(char* logFile);
+	//bool Train(char* logFile, double th , double maxError, const int maxTrainTimes = 1000000);
+	void SetTrainData(int N, ANN_INPUT_TYPE** input, ANN_OUTPUT_TYPE*output);
 
 	/*
-	²âÊÔÍøÂç
-	xin ÊäÈëÏòÁ¿
-	yout Êä³ö½á¹û
+	æµ‹è¯•ç½‘ç»œ
+	xin è¾“å…¥å‘é‡
+	yout è¾“å‡ºç»“æœ
 	*/
-	void Test(double* xin, double* yout);
+	void Test(ANN_INPUT_TYPE* xin, ANN_OUTPUT_TYPE yout);
 	void Test(char* filename);
 
-	/*Êä³öÈ¨Öµ¾ØÕó*/
+	/*è¾“å‡ºæƒå€¼çŸ©é˜µ*/
 	void Print(char* filename)const;
 	void Print_w() const;
 	void Print_b()const;
+	void OutPutANN(char *file) const;
 	void Print_v() const;
+	bool Train(char * LogFile);
 	void Print_e() const;
 
 
-	///»ñÈ¡ÒÑ¾­ÑµÁ·µÄ´ÎÊı
+	///è·å–å·²ç»è®­ç»ƒçš„æ¬¡æ•°
 	int GetCounter();
+
+	double Test(ANN_INPUT_TYPE * xin);
 
 	~ANN();
 private:
-	/*/// µ¼ÈëÊı¾İ
-	///filename ÎÄ¼şÃû
-	///ÎÄ¼şµÄÊı¾İ¸ñÊ½ Êı¾İ×éÊıN£¬Ã¿×éx£¬d
+	/*/// å¯¼å…¥æ•°æ®
+	///filename æ–‡ä»¶å
+	///æ–‡ä»¶çš„æ•°æ®æ ¼å¼ æ•°æ®ç»„æ•°Nï¼Œæ¯ç»„xï¼Œd
 	*/
-	bool LoadData(char* filename);//µ¼ÈëÊı¾İ
+	bool LoadSetting(char* filename);//å¯¼å…¥æ•°æ®
 
-	void Init();//³õÊ¼»¯
-	void BackError(int n);//Îó²î·´´«
+	void Init();//åˆå§‹åŒ–
+	void BackError(int n);//è¯¯å·®åä¼ 
 
 private:
 
-	//ÍøÂçÒş²ãÊı°üÀ¨ÊäÈë²ãºÍÊä³ö²ã
+	//ç½‘ç»œéšå±‚æ•°åŒ…æ‹¬è¾“å…¥å±‚å’Œè¾“å‡ºå±‚
 	int LAYERNUMS;
-	//Ã¿²ã½ÚµãÊıÄ¿
+	//æ¯å±‚èŠ‚ç‚¹æ•°ç›®
 	int *layerNum;
 
-	//È¨Öµ¾ØÕó
+	//æƒå€¼çŸ©é˜µ
 	double*** w;
-	//½ÚµããĞÖµ
+	//èŠ‚ç‚¹é˜ˆå€¼
 	double** b;
 
-	//ÖĞ¼ä½á¹û¾ØÕó
-	double **v;
-	//Îó²î·´´«¾ØÕó
+	//ä¸­é—´ç»“æœçŸ©é˜µ
+	ANN_INPUT_TYPE **v;
+	//è¯¯å·®åä¼ çŸ©é˜µ
 	double ** e;
 
 
-	//Ñù±¾Êı¾İ
-	int N;//ÊäÈëÊıÑù±¾¾İµÄ×éÊı
-	double**x;//ÊäÈë
-	double**d;//ÆÚÍûÊä³ö
-	double *y;//Êä³ö
-	double width;
+	//æ ·æœ¬æ•°æ®
+	int N;//è¾“å…¥æ•°æ ·æœ¬æ®çš„ç»„æ•°
+	ANN_INPUT_TYPE**x;//è¾“å…¥
+	ANN_OUTPUT_TYPE*d;//æœŸæœ›è¾“å‡º
+	ANN_OUTPUT_TYPE y;//è¾“å‡º
+	double width = 0;
 	double mid;
-	//Ğ§ÂÊ
+	//æ•ˆç‡
 	double th;
-	//Îó²î
+	//è¯¯å·®
 	double error;
-	//ÑµÁ·¼Æ²½Æ÷
+	//æœ€å¤§è¯¯å·®
+	double maxError = 0.00001;
+	//æœ€å¤§è®­ç»ƒæ¬¡æ•°
+	int maxTrainTimes = 100000;
+	//è®­ç»ƒè®¡æ­¥å™¨
 	int counter;
 
 };
