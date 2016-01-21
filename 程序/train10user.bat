@@ -1,0 +1,1 @@
+stats.exe ../data/10user.txt

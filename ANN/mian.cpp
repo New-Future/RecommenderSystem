@@ -134,6 +134,13 @@ void main(int argc, char** argv)
 		double ** input = nullptr;
 		double*output = nullptr;
 		int N = LoadTrainData(input, output, inputFile);
+		ofstream o("data.txt");
+		o << N << endl;
+		for (size_t i = 0; i < N; i++)
+		{
+			o << input[i][0] << "\t" << input[i][1] << "\t" << input[i][2]/10000000.0 << "\t" << input[i][3] / 10000000.0 << "\t" << output[i] << endl;
+		}
+		o.close();
 		Train(input, output, N);
 	}
 

@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include<iomanip>
 //#define DEBUG //调试时加载
 
 typedef  double ANN_INPUT_TYPE;

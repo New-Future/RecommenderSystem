@@ -26,5 +26,8 @@
     <ClInclude Include="ANN.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="n.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

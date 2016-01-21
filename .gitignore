@@ -214,3 +214,5 @@ _Pvt_Extensions/
 ModelManifest.xml
 !release/.gitignore
 RecommenderSystem/RecommenderSystem.VC.opendb
+ANN/ann.txt
+ANN/ann.data
