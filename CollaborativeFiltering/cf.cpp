@@ -1,7 +1,8 @@
 #include "cf.h"
-
+//#include <omp.h>
+#define THREAD_NUM 16
 CF::CF(int user_size, int user_NB_len, int item_NB_len)
-	: USER_SIZE(user_size), NBU_LEN (user_NB_len), NBI_LEN(item_NB_len) {}
+	: USER_SIZE(user_size), NBU_LEN(user_NB_len), NBI_LEN(item_NB_len) {}
 
 CF::~CF()
 {
@@ -19,7 +20,7 @@ void CF::init(RANK_LIST* rate)
 {
 	this->rate = rate;
 	initAvgRate();
-	initPearson();
+	initUserPearson();
 	initNBUser();
 }
 
@@ -38,23 +39,33 @@ void CF::initAvgRate() {
 }
 
 //计算所有的皮尔森相关系数
-void CF::initPearson()
+void CF::initUserPearson()
 {
+	//omp_set_num_threads(THREAD_NUM);
 	this->pearson = new double*[USER_SIZE];
-	//this->pearson[0] = NULL;
+#pragma omp parallel for
 	for (size_t i = 0; i < USER_SIZE; i++)
 	{
 		this->pearson[i] = new double[i + 1];
-		for (size_t j = 0; j < i; j++)
-		{
-			this->pearson[i][j] = Pearson(i, j);
-		}
 		this->pearson[i][i] = 0;
 	}
+#pragma omp parallel for
+	for (size_t i = 0; i < USER_SIZE; i++)
+	{
+		for (size_t j = 0; j < i; j++)
+		{
+			this->pearson[i][j] = this->PearsonWithSize(i, j);
+		}
+		if (i % 1000 == 0)
+		{
+			cout << "已处理:" << (i + 1.0)*100.0 / USER_SIZE << "%" << endl;
+		}
+	}
+	cout << "已处理" << "100%" << endl;
 }
 
 //计算Pearson系数
-inline double CF::Pearson(ID_TYPE i, ID_TYPE j)
+inline double CF::userPearson(ID_TYPE i, ID_TYPE j)
 {
 	double Ri_uRj_u = 0, Ri_u_2 = 0, Rj_u_2 = 0, di, dj;
 	RANK_LIST *Ri, *Rj;
@@ -89,7 +100,7 @@ inline double CF::Pearson(ID_TYPE i, ID_TYPE j)
 
 
 //计算Pearson系数,考虑交集∩的大小
-double CF::PearsonWithSize(ID_TYPE i, ID_TYPE j)
+inline double CF::PearsonWithSize(ID_TYPE i, ID_TYPE j)
 {
 	double Ri_uRj_u = 0, Ri_u_2 = 0, Rj_u_2 = 0, di, dj;
 	RANK_LIST *Ri, *Rj;
@@ -119,11 +130,12 @@ double CF::PearsonWithSize(ID_TYPE i, ID_TYPE j)
 			}
 		}
 	}
-	return (Ri_uRj_u) / sqrt(Ri_u_2*Rj_u_2)*(set_size / Ri->size())*(set_size / Rj->size());
+	double p = Ri_u_2*Rj_u_2;
+	return (p*set_size) == 0 ? 0 : (Ri_uRj_u) / sqrt(p)*((double)set_size / Ri->size())*((double)set_size / Rj->size());
 }
 
 //获取pearson相关度
-inline double CF::getPearson(ID_TYPE i, ID_TYPE j)
+inline double CF::getUserPearson(ID_TYPE i, ID_TYPE j)
 {
 	return (i > j) ? pearson[i][j] : pearson[j][i];
 }
@@ -131,15 +143,17 @@ inline double CF::getPearson(ID_TYPE i, ID_TYPE j)
 //计算用户的邻近点
 void CF::initNBUser()
 {
-	list<Pair> neighbour(NBU_LEN);
 	nbu = new ID_TYPE*[USER_SIZE];
-	double pearsonValue = 0;
+#pragma omp parallel for
 	for (size_t i = 0; i < USER_SIZE; i++)
 	{
+		nbu[i] = new ID_TYPE[NBU_LEN];
+		list<Pair> neighbour(NBU_LEN);
+		double pearsonValue = 0;
 		//统计最大的PEARSON相关度最大的前NBU_LEN个
 		for (size_t j = 0; j < USER_SIZE; j++)
 		{
-			pearsonValue = abs(getPearson(i, j));
+			pearsonValue = abs(getUserPearson(i, j));
 			if (pearsonValue <= neighbour.back().value)
 			{//最后一个直接跳过,减少循环次数
 				continue;
@@ -155,15 +169,13 @@ void CF::initNBUser()
 				}
 			}
 		}
-		nbu[i] = new ID_TYPE[NBU_LEN];
 		int k = 0;
 		//取出前NBU_LEN,结果归0
 		for (auto n = neighbour.begin(); n != neighbour.end(); ++n)
 		{
 			nbu[i][k++] = n->id;
-			n->id = 0;
-			n->value = 0;
 		}
+		neighbour.clear();
 	}
 }
 
@@ -171,9 +183,10 @@ void CF::initNBUser()
 double CF::predictRate(ID_TYPE user, ID_TYPE iterm) {
 	double sumi = 0, sum2 = 0, sim;
 	int index;
+
 	for (int i = 0; i < NBU_LEN; ++i) {
 		index = nbu[user][i];
-		sim = getPearson(user, index);
+		sim = getUserPearson(user, index);
 		for (auto r : rate[index])
 		{
 			if (r.item == index)

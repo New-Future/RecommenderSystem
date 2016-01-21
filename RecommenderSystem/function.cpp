@@ -2,24 +2,24 @@
 #define COM_FUNC
 #include "def.h"
 /*阶段计时*/
-void TIME_COUNT(char* name)
+void TIME_COUNT(char* name, bool reset)
 {
-	static unsigned long start_time = clock();
+	static unsigned long start_time;
 	static double all_time = 0;
-	//if (start_time == 0)
-	//{
-	//	start_time = clock();
-	//	cout << name << "开始计时" << endl;
-	//}
-	//else
-	//{
+	if (reset)
+	{
+		all_time = 0;
+		start_time = clock();
+		cout << name << "计时开始" << endl;
+	}
+	else
+	{
 		unsigned long end_time = clock();
 		double used_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		all_time += used_time;
 		start_time = end_time;
 		cout << name << "耗时：" << used_time << "s ,累计耗时: " << all_time << "s\n";
-	//}
-
+	}
 }
 
 //读入文本格式数据

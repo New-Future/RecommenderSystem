@@ -85,7 +85,7 @@ ATTR_MAP ReadAttr(char*filename)
 //保存评分
 void SaveRates(USER_RATE_LIST rates)
 {
-	ofstream out(USER_ITEM_RATE_FILE, ios::binary);//user-item-rate
+	ofstream out_UIR(USER_ITEM_RATE_FILE, ios::binary);//user-item-rate
 	ofstream out_user_rate(USER_RATE_FILE, ios::binary);//user[item-rates]
 
 	ofstream trainfile(TRAIN_FILE, ios::binary);//训练集
@@ -93,8 +93,8 @@ void SaveRates(USER_RATE_LIST rates)
 	ofstream testAnswer(TEST_TXT_FILE);
 	ofstream testTxt(TEST_INPUT_FILE);//测试输入
 
-	ID_TYPE size = rates.size(), trainCount = 0, testCount = 0, n = 0, uid = 0;
-	out.write((char*)&amount, ID_LEN);
+	ID_TYPE size = rates.size(),max_item_id=0, trainCount = 0, testCount = 0, n = 0, uid = 0;
+	out_UIR.write((char*)&amount, ID_LEN).write((char*)&max_item_id,ID_LEN);
 	out_user_rate.write((char*)&size, ID_LEN);
 	testfile.write((char*)&size, ID_LEN);
 	trainfile.write((char*)&size, ID_LEN);
@@ -112,8 +112,12 @@ void SaveRates(USER_RATE_LIST rates)
 		trainfile.write((char*)&n, ID_LEN);
 		for (int i = 0; i < r.N; i++)
 		{
+			if (r.ratings[i].item>max_item_id)
+			{
+				max_item_id = r.ratings[i].item;
+			}
 			//逐个评分写入
-			out.write((char*)&r.user, ID_LEN).
+			out_UIR.write((char*)&r.user, ID_LEN).
 				write((char*)&r.ratings[i].item, ID_LEN).
 				write((char*)&r.ratings[i].rank, RATE_LEN);
 			out_user_rate.write((char*)&r.ratings[i].item, ID_LEN)
@@ -142,9 +146,11 @@ void SaveRates(USER_RATE_LIST rates)
 	testTxt.close();
 	testAnswer.close();
 	out_user_rate.close();
-	out.close();
+	out_UIR.seekp(ID_LEN).write((char*)&max_item_id, ID_LEN);
+	out_UIR.close();
 	cout << "\n生成样本\n\t训练集:" << TRAIN_FILE << " (" << trainCount << " 组评分);\n\t测试集:"
 		<< TEST_BIN_FILE << " (" << testCount << " 组评分 )" << endl
+		<< "用户最大ID" << amount << "; 商品(item)最大ID" << max_item_id << endl
 		<< "\t格式化训练数据" << USER_RATE_FILE << endl;
 }
 
@@ -212,18 +218,25 @@ int main(int argc, char** argv)
 	char* train_file = (argc > 1) ? argv[1] : "..\\data\\train.txt";
 	char* attr_file = (argc > 2) ? argv[2] : "..\\data\\itemAttribute.txt";
 
+	TIME_COUNT("数据初始化和格式化", true);
+
 	cout << "\n统计原始数据文本" << train_file << endl ;
 	auto rate = ReadTrain(train_file);
-	cout << "构建训练数据样本和测试样本";
+
+	TIME_COUNT("读取原始样本");
+	cout << "构建训练数据和测试样本";
 	SaveRates(rate);
+	TIME_COUNT("构建训练集和测试集");
 
 	cout << "\n统计元素属性文件" << attr_file << endl;
 	auto attrs = ReadAttr(attr_file);
+	TIME_COUNT("读取属性");
 	cout << "筛选和格式化属性，导出二进制数据" << endl;
 	SaveAtrrs(attrs);
-
+	TIME_COUNT("格式化属性");
 	cout << "\n生成ANN训练数据样本";
 	SaveANN(rate, attrs);
+	TIME_COUNT("生成ANN训练数据");
 	rate.clear();
 	attrs.clear();
 	cout << "\n数据生成完成\n";

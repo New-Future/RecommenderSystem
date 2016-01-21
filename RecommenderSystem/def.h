@@ -64,7 +64,7 @@ typedef vector<Rank> RANK_LIST;
 #define TEST_OUTPUT_FILE "../data/test_output.txt"
 
 /*阶段计时*/
-void TIME_COUNT(char* name = "阶段");
+void TIME_COUNT(char* name ,bool reset=false);
 
 //读入文本格式数据
 USER_RATE_LIST ReadRate(char* filename);

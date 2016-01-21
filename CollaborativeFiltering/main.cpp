@@ -3,7 +3,7 @@
 void main(int argc, char** argv)
 {
 	int user_size, item_size;
-	TIME_COUNT("用户最近邻算法");
+	TIME_COUNT("协同过滤",true);
 	char* trainfile = (argc > 1) ? argv[1] : TRAIN_FILE;
 	auto rates = LoadRates(trainfile, user_size);
 	TIME_COUNT("载入评分数据");
@@ -14,6 +14,7 @@ void main(int argc, char** argv)
 	char* testfile = (argc > 2) ? argv[2] : TEST_INPUT_FILE;
 	auto test_rates = ReadTest(testfile);
 	TIME_COUNT("载入测试集");
+#pragma omp parallel for
 	for (auto i = test_rates.begin(); i != test_rates.end(); i++)
 	{
 		for (size_t j = 0; j < i->N; j++)
