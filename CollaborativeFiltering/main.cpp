@@ -6,6 +6,7 @@ void main(int argc, char** argv)
 	TIME_COUNT("协同过滤",true);
 	char* trainfile = (argc > 1) ? argv[1] : TRAIN_FILE;
 	auto rates = LoadRates(trainfile, user_size);
+	auto attrs = LoadAttr();
 	TIME_COUNT("载入评分数据");
 	CF cf(user_size, 15);
 	cf.init(rates);

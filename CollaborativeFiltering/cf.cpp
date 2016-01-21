@@ -24,17 +24,58 @@ void CF::init(RANK_LIST* rate)
 	initNBUser();
 }
 
-//计算每个用户的平均评分
+void CF::init(RANK_LIST* rate, ATTR_MAP attrs)
+{
+#pragma omp parallel for
+	for (auto m = attrs.begin(); m != attrs.end(); ++m)
+	{
+		//初始化属性
+		nbi[m->first] = { m->second.attr1,m->second.attr2 };
+	}
+#pragma omp parallel for
+	for (auto i = nbi.begin(); i != nbi.end(); i++)
+	{
+#pragma omp parallel for
+		for (auto j = i; j != nbi.end(); j++)
+		{
+			//0属性如何处理？
+			double dx = (i->second.attr1 - j->second.attr1);
+			double dy = (i->second.attr2 - j->second.attr2);
+			double 			d = 1.0 / (1.0 + sqrt(dx*dx + dy*dy));
+			if (i->first > j->first)
+			{
+				item_sim[pair<ID_TYPE, ID_TYPE>(i->first, j->first)] = d;
+			}
+			else {
+				item_sim[pair<ID_TYPE, ID_TYPE>(i->first, j->first)] = d;
+			}
+
+		}
+	}
+	init(rate);
+}
+
+//计算平均评分
 void CF::initAvgRate() {
 	rate_avg = new double[USER_SIZE];
+
+	//计算每个用户的平均评分
 	double sum;
 	for (int i = 0; i < USER_SIZE; ++i) {
 		sum = 0;
 		for (auto r : rate[i])
 		{
 			sum += r.rank;
+			this->nbi[r.item].avg + r.rank;
+			this->nbi[r.item].users_rates.push_back(Pair{ i, (double)r.rank });
 		}
 		rate_avg[i] = sum / rate[i].size();
+	}
+	//计算每个item的平均评分
+#pragma omp parallel for
+	for (auto m = nbi.begin(); m != nbi.end(); ++m)
+	{
+		m->second.avg /= m->second.users_rates.size();
 	}
 }
 
@@ -52,6 +93,7 @@ void CF::initUserPearson()
 #pragma omp parallel for
 	for (size_t i = 0; i < USER_SIZE; i++)
 	{
+#pragma omp parallel for
 		for (size_t j = 0; j < i; j++)
 		{
 			this->pearson[i][j] = this->PearsonWithSize(i, j);
@@ -103,31 +145,30 @@ inline double CF::userPearson(ID_TYPE i, ID_TYPE j)
 inline double CF::PearsonWithSize(ID_TYPE i, ID_TYPE j)
 {
 	double Ri_uRj_u = 0, Ri_u_2 = 0, Rj_u_2 = 0, di, dj;
-	RANK_LIST *Ri, *Rj;
-	if (rate[i].size() < rate[j].size())
-	{
-		Ri = &rate[j];
-		Rj = &rate[i];
-	}
-	else {
-		Ri = &rate[i];
-		Rj = &rate[j];
-	}
+	RANK_LIST *Ri= &rate[i], *Rj= &rate[j];
 	int set_size = 0;
-	for (auto ri : (*Ri))
+	auto ri = Ri->begin();
+	auto rj = Rj->begin();
+	while (ri!=Ri->end()&&rj!=Rj->end())
 	{
-		for each (auto rj in (*Rj))
+		if (ri->item == rj->item)
 		{
-			if (ri.item == rj.item)
-			{
-				di = (ri.rank - rate_avg[i]);
-				dj = (rj.rank - rate_avg[j]);
-				Ri_uRj_u += di*dj;
-				Ri_u_2 += di*di;
-				Rj_u_2 += dj*dj;
-				set_size++;
-				break;
-			}
+			di = (ri->rank - rate_avg[i]);
+			dj = (rj->rank - rate_avg[j]);
+			Ri_uRj_u += di*dj;
+			Ri_u_2 += di*di;
+			Rj_u_2 += dj*dj;
+			set_size++;
+			++ri;
+			++rj;
+			break;
+		}
+		else if (ri->item < rj->item)
+		{
+			++ri;
+		}
+		else {
+			++rj;
 		}
 	}
 	double p = Ri_u_2*Rj_u_2;
@@ -179,6 +220,43 @@ void CF::initNBUser()
 	}
 }
 
+void CF::initItemPearson()
+{
+#pragma omp parallel for
+	for (auto i = nbi.begin(); i != nbi.end(); i++)
+	{
+#pragma omp parallel for
+		for (auto j = i; j != nbi.end(); j++)
+		{
+			double sim = 0, sumi = 0, sumj = 0, sumij = 0;
+			int n = 0;
+			auto ti = i->second.users_rates.begin();
+			auto tj = j->second.users_rates.begin();
+			while (ti != i->second.users_rates.end() && tj != j->second.users_rates.end())
+			{
+				if (ti->id == tj->id)
+				{
+					sumij += ti->value*tj->value;
+					sumi += (ti->value - i->second.avg)*(ti->value - i->second.avg);
+					sumj += (tj->value - j->second.avg)*(tj->value - j->second.avg);
+					++ti;
+					++tj;
+					++n;
+				}
+				else if (ti->id < tj->id)
+				{
+					++ti;
+				}
+				else
+				{
+					++tj;
+				}
+			}
+			if (n > 0)
+				item_sim[pair<ID_TYPE, ID_TYPE>(i->first, j->first)] += sumij / sqrt(sumi*sumj);
+		}
+	}
+}
 //产生推荐，预测某用户对某项目的评分
 double CF::predictRate(ID_TYPE user, ID_TYPE iterm) {
 	double sumi = 0, sum2 = 0, sim;
