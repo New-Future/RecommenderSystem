@@ -11,7 +11,7 @@
 //#include<algorithm>
 //#include<map>
 using namespace std;
-
+typedef float PEAR_TYPE;
 struct Pair {
 	int id;
 	double value;
@@ -54,19 +54,24 @@ public:
 	inline double getItemPearson(ID_TYPE itemi, ID_TYPE itemj);
 	//预测评分
 	double predictRate(ID_TYPE user, ID_TYPE item);
+	double predictRate2(ID_TYPE user, ID_TYPE iterm);
 
+	void SaveNBU(char* name);
+	
 	~CF();
 
 private:
 	//计算均值
 	void initAvgRate();
+	void initUserPearsonOnly();
 	//计算全部pearson系数
 	void initUserPearson();
 	void initItemPearson();
 	inline double userPearson(ID_TYPE useri, ID_TYPE userj);
 	inline double itemPearson(ID_TYPE itemi, ID_TYPE itemj);
 	double PearsonWithSize(ID_TYPE i, ID_TYPE j);
-
+	double absPearsonWithSize(ID_TYPE i, ID_TYPE j);
+	double getPredict(ID_TYPE user, ID_TYPE item);
 
 	//计算邻近节点
 	void initNBUser();
@@ -79,11 +84,11 @@ private:
 	const int NBU_LEN;        //USER的最近邻居数
 	int ITEM_SIZE;
 
-	double** pearson;//用户 pearson系数矩阵
+	PEAR_TYPE** pearson;//用户 pearson系数矩阵
 	RANK_LIST * rate;    //评分矩阵
 	ID_TYPE** nbu;            //存放每个USER的最近邻居
-	double* rate_avg;            //每个用户的平均评分
+	PEAR_TYPE* rate_avg;            //每个用户的平均评分
 
-	map < pair<ID_TYPE, ID_TYPE>, double >item_sim;//item相似度
+	map < pair<ID_TYPE, ID_TYPE>, PEAR_TYPE >item_sim;//item相似度
 	map<ID_TYPE, Item> nbi;//存放每个item的最近邻节点
 };

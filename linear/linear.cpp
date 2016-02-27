@@ -97,6 +97,8 @@ USER_RATE_LIST LinearRate(double** beta, USER_RATE_LIST test, ATTR_MAP attrs)
 int main(int argc, char** argv)
 {
 	cout << "线性回归分析\n \t参数1:二进制训练集文件;\n\t参数2:测试集文件\n\t参数3:输出文件\n";
+
+	TIME_COUNT("线性回归分析",true);
 	int n;
 	char* trainfile = (argc > 1) ? argv[1] : TRAIN_FILE;
 	cout << "载入训练集(" << trainfile << ")...\n";
@@ -106,6 +108,7 @@ int main(int argc, char** argv)
 	cout << "载入item属性(" << ITEM_ATTR_FILE << ")...\n";
 	auto attrs = LoadAttr();
 
+	TIME_COUNT("数据载入");
 	cout << "开始线性回归分析...\n";
 	double** beta = analysis(attrs, rates, n);
 	delete[] rates;
@@ -113,10 +116,11 @@ int main(int argc, char** argv)
 	char* betafile = "beta.txt";
 	cout << "分析完成，导出BETA矩阵(" << betafile << ")...\n";
 	PrintBeta(beta, n, betafile);
-
+	
+	TIME_COUNT("计算分析");
 
 	char* testfile = (argc > 2) ? argv[2] : TEST_INPUT_FILE;
-	cout << "载入测试集(" << testfile << ")...\n";
+	cout << "\n载入测试集(" << testfile << ")...\n";
 	auto test = ReadTest(testfile);
 
 	cout << "线性回归计算...\n";
@@ -128,8 +132,9 @@ int main(int argc, char** argv)
 	}
 	delete[]beta;
 	attrs.clear();
+	TIME_COUNT("处理测试数据");
 	char* output = (argc > 3) ? argv[3] : TEST_OUTPUT_FILE;
-	cout << "导出测试结果（" << output << "）\n";
+	cout << "\n导出测试结果（" << output << "）\n";
 	SaveTest(test, output);
 	test.clear();
 	system("pause");

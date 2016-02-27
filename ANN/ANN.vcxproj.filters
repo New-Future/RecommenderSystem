@@ -21,6 +21,9 @@
     <ClCompile Include="mian.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\RecommenderSystem\function.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ANN.h">

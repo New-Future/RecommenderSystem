@@ -1,13 +1,18 @@
 ﻿#include "../RecommenderSystem/def.h"
+#include <algorithm>
 int amount = 0;
 std::set<ID_TYPE> RateSet;
+int compItem(const void * i, const void * j)
+{
+	return ((Rank*)i)->item > ((Rank*)j)->item?1:-1;
+}
 //读入训练集
 USER_RATE_LIST ReadTrain(char* filename)
 {
 	ifstream input(filename);
 	if (!input.is_open())
 	{
-		cout << "\n打开原始数据文件"<<filename<<"出错";
+		cout << "\n打开原始数据文件" << filename << "出错";
 		system("pause");
 		exit(1);
 	}
@@ -30,6 +35,7 @@ USER_RATE_LIST ReadTrain(char* filename)
 			r.ratings[i] = { item,rank };
 			amount++;
 		}
+		qsort(r.ratings, n, sizeof(Rank), compItem);
 		rate_list.push_back(r);
 	}
 	cout << "用户数:" << rate_list.size() << " ;评分数: " << rate_count << " 其中未评价（0）数:" << zero_count << endl
@@ -93,8 +99,8 @@ void SaveRates(USER_RATE_LIST rates)
 	ofstream testAnswer(TEST_TXT_FILE);
 	ofstream testTxt(TEST_INPUT_FILE);//测试输入
 
-	ID_TYPE size = rates.size(),max_item_id=0, trainCount = 0, testCount = 0, n = 0, uid = 0;
-	out_UIR.write((char*)&amount, ID_LEN).write((char*)&max_item_id,ID_LEN);
+	ID_TYPE size = rates.size(), max_item_id = 0, trainCount = 0, testCount = 0, n = 0, uid = 0;
+	out_UIR.write((char*)&amount, ID_LEN).write((char*)&max_item_id, ID_LEN);
 	out_user_rate.write((char*)&size, ID_LEN);
 	testfile.write((char*)&size, ID_LEN);
 	trainfile.write((char*)&size, ID_LEN);
@@ -220,7 +226,7 @@ int main(int argc, char** argv)
 
 	TIME_COUNT("数据初始化和格式化", true);
 
-	cout << "\n统计原始数据文本" << train_file << endl ;
+	cout << "\n统计原始数据文本" << train_file << endl;
 	auto rate = ReadTrain(train_file);
 
 	TIME_COUNT("读取原始样本");

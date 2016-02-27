@@ -152,6 +152,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\RecommenderSystem\function.cpp" />
     <ClCompile Include="ANN.cpp" />
     <ClCompile Include="mian.cpp" />
   </ItemGroup>

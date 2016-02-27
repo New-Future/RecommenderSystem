@@ -1,42 +1,19 @@
 ﻿#include "def.h"
-//
-//RANK_LIST * LoadRates(char* file, int & LEN)
-//{
-//	ifstream input(file, ios::binary);
-//	input.read((char*)&LEN, ID_LEN);
-//	ID_TYPE  n, i = 0;
-//	RANK_LIST *rates = new RANK_LIST[LEN];
-//	do
-//	{//逐个用户读取
-//		input.read((char*)&n, ID_LEN);
-//		rates[i] = RANK_LIST(n);
-//		for (auto r : rates[i])
-//		{
-//			input.read((char*)&r.item, ID_LEN)
-//				.read((char*)&r.rank, RATE_LEN);
-//		}
-//	} while (++i < LEN);
-//	input.close();
-//	return rates;
-//}
-//
-////读入属性
-//ATTR_MAP LoadAttr()
-//{
-//	ifstream input(ITEM_ATTR_FILE, ios::binary);
-//	ID_TYPE id, size;
-//	input.read((char*)&size, ID_LEN);
-//	ATTR_MAP attrs;
-//	while (size-- > 0)
-//	{
-//		input.read((char*)&id, ID_LEN);
-//		input.read((char*)&attrs[id].attr1, ATTR_LEN)
-//			.read((char*)&attrs[id].attr1, ATTR_LEN);
-//	}
-//	input.close();
-//	return attrs;
-//}
 
+double* GetAvg(RANK_LIST* rates,int len)
+{
+	double* avg = new double[len];
+	for (size_t i = 0; i < len; i++)
+	{
+		double sum = 0;
+		for (auto r: rates[i])
+		{
+			sum += r.rank;
+		}
+		avg[i] = sum / rates[i].size();
+	}
+	return avg;
+}
 
 //输出测试结果
 void SaveTest(RANK_LIST* rates, int n, char* filename = TEST_OUTPUT_FILE)
@@ -53,16 +30,30 @@ void SaveTest(RANK_LIST* rates, int n, char* filename = TEST_OUTPUT_FILE)
 	output.close();
 }
 
-void main()
+void main(int argc,char ** argv)
 {
+	char* trainfile = (argc > 1) ? argv[1] : TRAIN_FILE;
+	char* testfile = (argc > 2) ? argv[2] : TEST_INPUT_FILE;
+	char* outfile = (argc > 3) ? argv[3] : TEST_OUTPUT_FILE;
+	TIME_COUNT("平均值测试",true);
 	int len;
-	//auto rates = LoadRates(USER_RATE_FILE, len);
-	//BuildTrain(rates, len);
-	//auto trainRates = LoadRates(TRAIN_FILE, len);
-	//auto attrs = LoadAttr();
-	//cout << len;// << ends << attrs.size();
-	auto t = LoadRates(TEST_BIN_FILE, len);
-	//auto r = ReadTest(TEST_INPUT_FILE);
-	SaveTest(t,len);
+	auto rates = LoadRates(trainfile, len);
+	double * avg=GetAvg(rates, len);
+	delete[] rates;
+	TIME_COUNT("读取数据");
+	//auto t = LoadRates(TEST_BIN_FILE, len);
+	auto test = ReadTest(testfile);
+	int n = 0;
+	for (auto t = test.begin(); t != test.end();++t)
+	{
+		for (size_t i = 0; i < t->N; i++)
+		{
+			t->ratings[i].rank = avg[n];
+		}
+		n++;
+	}
+
+	SaveTest(test,outfile);
+	TIME_COUNT("生成结果测试");
 	system("pause");
 }

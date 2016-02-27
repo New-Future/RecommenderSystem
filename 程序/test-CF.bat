@@ -1,2 +1,1 @@
-CollaborativeFiltering-User.exe  ..\data\train.bin ..\data\test.txt
-RMSE.exe
+CollaborativeFiltering.exe  ..\data\user_rate.bin ..\data\test.txt test_CF.txt

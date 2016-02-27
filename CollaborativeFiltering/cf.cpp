@@ -20,7 +20,7 @@ void CF::init(RANK_LIST* rate)
 {
 	this->rate = rate;
 	initAvgRate();
-	initUserPearson();
+	initUserPearsonOnly();
 	initNBUser();
 }
 
@@ -32,16 +32,18 @@ void CF::init(RANK_LIST* rate, ATTR_MAP attrs)
 		//初始化属性
 		nbi[m->first] = { m->second.attr1,m->second.attr2 };
 	}
-#pragma omp parallel for
+	//auto i = nbi.begin();
+	int  N = nbi.size();
+	cout << N << endl;
+	//#pragma omp parallel for
 	for (auto i = nbi.begin(); i != nbi.end(); i++)
 	{
-#pragma omp parallel for
 		for (auto j = i; j != nbi.end(); j++)
 		{
 			//0属性如何处理？
 			double dx = (i->second.attr1 - j->second.attr1);
 			double dy = (i->second.attr2 - j->second.attr2);
-			double 			d = 1.0 / (1.0 + sqrt(dx*dx + dy*dy));
+			double d = 1.0 / (1.0 + sqrt(dx*dx + dy*dy));
 			if (i->first > j->first)
 			{
 				item_sim[pair<ID_TYPE, ID_TYPE>(i->first, j->first)] = d;
@@ -52,12 +54,16 @@ void CF::init(RANK_LIST* rate, ATTR_MAP attrs)
 
 		}
 	}
-	init(rate);
+	this->rate = rate;
+	initAvgRate();
+	initItemPearson();
+	intNBItem();
+	initUserPearson();
 }
 
 //计算平均评分
 void CF::initAvgRate() {
-	rate_avg = new double[USER_SIZE];
+	rate_avg = new PEAR_TYPE[USER_SIZE];
 
 	//计算每个用户的平均评分
 	double sum;
@@ -80,14 +86,14 @@ void CF::initAvgRate() {
 }
 
 //计算所有的皮尔森相关系数
-void CF::initUserPearson()
+void CF::initUserPearsonOnly()
 {
 	//omp_set_num_threads(THREAD_NUM);
-	this->pearson = new double*[USER_SIZE];
+	this->pearson = new PEAR_TYPE*[USER_SIZE];
 #pragma omp parallel for
 	for (size_t i = 0; i < USER_SIZE; i++)
 	{
-		this->pearson[i] = new double[i + 1];
+		this->pearson[i] = new PEAR_TYPE[i+1];
 		this->pearson[i][i] = 0;
 	}
 #pragma omp parallel for
@@ -103,6 +109,34 @@ void CF::initUserPearson()
 			cout << "已处理:" << (i + 1.0)*100.0 / USER_SIZE << "%" << endl;
 		}
 	}
+	cout << "已处理:" << "100%" << endl;
+}
+//计算所有的皮尔森相关系数
+void CF::initUserPearson()
+{
+	//omp_set_num_threads(THREAD_NUM);
+	this->pearson = new PEAR_TYPE*[USER_SIZE];
+#pragma omp parallel for
+	for (size_t i = 0; i < USER_SIZE; i++)
+	{
+		this->pearson[i] = new PEAR_TYPE[i + 1];
+		this->pearson[i][i] = 0;
+	}
+#pragma omp parallel for
+	for (size_t i = 0; i < USER_SIZE; i++)
+	{
+#pragma omp parallel for
+		for (size_t j = 0; j < i; j++)
+		{
+			//this->pearson[i][j] = this->PearsonWithSize(i, j);
+			//this->pearson[i][j] = this->absPearsonWithSize(i, j);
+			this->pearson[i][j] = this->userPearson(i, j);
+		}
+		if (i % 1000 == 0)
+		{
+			cout << "已处理:" << (i + 1.0)*100.0 / USER_SIZE << "%" << endl;
+		}
+	}
 	cout << "已处理" << "100%" << endl;
 }
 
@@ -110,31 +144,62 @@ void CF::initUserPearson()
 inline double CF::userPearson(ID_TYPE i, ID_TYPE j)
 {
 	double Ri_uRj_u = 0, Ri_u_2 = 0, Rj_u_2 = 0, di, dj;
-	RANK_LIST *Ri, *Rj;
-	if (rate[i].size() < rate[j].size())
+	//RANK_LIST *Ri= &rate[j],*Rj = &rate[i];
+	auto ri = rate[i].begin(), rj = rate[j].begin();
+	double r1 = 0;
+	double r2 = 0;
+	while (ri != rate[i].end() && rj != rate[j].end())
 	{
-		Ri = &rate[j];
-		Rj = &rate[i];
-	}
-	else
-	{
-		Ri = &rate[i];
-		Rj = &rate[j];
-	}
-	for (auto ri : (*Ri))
-	{
-		for each (auto rj in (*Rj))
+		if (ri->item == rj->item)
 		{
-			if (ri.item == rj.item)
-			{
-				di = (ri.rank - rate_avg[i]);
-				dj = (rj.rank - rate_avg[j]);
-				Ri_uRj_u += di*dj;
-				Ri_u_2 += di*di;
-				Rj_u_2 += dj*dj;
-				break;
-			}
+			r1 = ri->rank;
+			r2 = rj->rank;
+			++ri;
+			++rj;
 		}
+		else if (ri->item < rj->item)
+		{
+
+			r1 = ri->rank;
+			r2 = this->getPredict(j, ri->item);
+			++ri;
+		}
+		else
+		{
+			r1 = this->getPredict(i, rj->item);
+			r2 = rj->rank;
+			++rj;
+		}
+		di = (r1 - rate_avg[i]);
+		dj = (r2 - rate_avg[j]);
+		Ri_uRj_u += di*dj;
+		Ri_u_2 += di*di;
+		Rj_u_2 += dj*dj;
+	}
+	while (ri != rate[i].end())
+	{
+		r1 = ri->rank;
+		r2 = this->getPredict(j, ri->item);
+		++ri;
+
+		di = (r1 - rate_avg[i]);
+		dj = (r2 - rate_avg[j]);
+		Ri_uRj_u += di*dj;
+		Ri_u_2 += di*di;
+		Rj_u_2 += dj*dj;
+	}
+
+	while (rj != rate[j].end())
+	{
+		r1 = this->getPredict(i, rj->item);
+		r2 = rj->rank;
+		++rj;
+
+		di = (r1 - rate_avg[i]);
+		dj = (r2 - rate_avg[j]);
+		Ri_uRj_u += di*dj;
+		Ri_u_2 += di*di;
+		Rj_u_2 += dj*dj;
 	}
 	double p = Ri_u_2*Rj_u_2;
 	return p == 0 ? 0 : (Ri_uRj_u) / sqrt(p);
@@ -145,11 +210,11 @@ inline double CF::userPearson(ID_TYPE i, ID_TYPE j)
 inline double CF::PearsonWithSize(ID_TYPE i, ID_TYPE j)
 {
 	double Ri_uRj_u = 0, Ri_u_2 = 0, Rj_u_2 = 0, di, dj;
-	RANK_LIST *Ri= &rate[i], *Rj= &rate[j];
+	RANK_LIST *Ri = &rate[i], *Rj = &rate[j];
 	int set_size = 0;
 	auto ri = Ri->begin();
 	auto rj = Rj->begin();
-	while (ri!=Ri->end()&&rj!=Rj->end())
+	while (ri != Ri->end() && rj != Rj->end())
 	{
 		if (ri->item == rj->item)
 		{
@@ -172,13 +237,53 @@ inline double CF::PearsonWithSize(ID_TYPE i, ID_TYPE j)
 		}
 	}
 	double p = Ri_u_2*Rj_u_2;
+	return (p*set_size) == 0 ? 0 : (Ri_uRj_u) / sqrt(p)*((double)set_size / Ri->size());
+}
+
+inline double CF::absPearsonWithSize(ID_TYPE i, ID_TYPE j)
+{
+	double Ri_uRj_u = 0, Ri_u_2 = 0, Rj_u_2 = 0, di, dj;
+	RANK_LIST *Ri = &rate[i], *Rj = &rate[j];
+	int set_size = 0;
+	auto ri = Ri->begin();
+	auto rj = Rj->begin();
+	while (ri != Ri->end() && rj != Rj->end())
+	{
+		if (ri->item == rj->item)
+		{
+			di = (ri->rank);
+			dj = (rj->rank);
+			Ri_uRj_u += di*dj;
+			Ri_u_2 += di*di;
+			Rj_u_2 += dj*dj;
+			set_size++;
+			++ri;
+			++rj;
+			break;
+		}
+		else if (ri->item < rj->item)
+		{
+			++ri;
+		}
+		else {
+			++rj;
+		}
+	}
+	double p = Ri_u_2*Rj_u_2;
 	return (p*set_size) == 0 ? 0 : (Ri_uRj_u) / sqrt(p)*((double)set_size / Ri->size())*((double)set_size / Rj->size());
 }
 
-//获取pearson相关度
+//获取user pearson相关度
 inline double CF::getUserPearson(ID_TYPE i, ID_TYPE j)
 {
+//	return pearson[i][j];
 	return (i > j) ? pearson[i][j] : pearson[j][i];
+}
+//获取item pearson相关度
+inline double CF::getItemPearson(ID_TYPE i, ID_TYPE j)
+{
+	return (i == j) ? 0 : ((i > j)
+		? item_sim[pair<ID_TYPE, ID_TYPE>(i, j)] : item_sim[pair<ID_TYPE, ID_TYPE>(j, i)]);
 }
 
 //计算用户的邻近点
@@ -189,7 +294,8 @@ void CF::initNBUser()
 	for (size_t i = 0; i < USER_SIZE; i++)
 	{
 		nbu[i] = new ID_TYPE[NBU_LEN];
-		list<Pair> neighbour(NBU_LEN);
+		Pair defaultp(-1, 0.0);
+		list<Pair> neighbour(NBU_LEN, defaultp);
 		double pearsonValue = 0;
 		//统计最大的PEARSON相关度最大的前NBU_LEN个
 		for (size_t j = 0; j < USER_SIZE; j++)
@@ -220,6 +326,43 @@ void CF::initNBUser()
 	}
 }
 
+void CF::intNBItem()
+{
+#pragma omp parallel for
+	for (auto i = nbi.begin(); i != nbi.end(); i++)
+	{
+		i->second.neighbors = new ID_TYPE[NBI_LEN];
+		list<Pair> neighbour(NBI_LEN);
+		double pearsonValue = 0;
+		for (auto j = nbi.begin(); j != nbi.end(); j++)
+		{
+			pearsonValue = abs(getItemPearson(i->first, j->first));
+			if (pearsonValue <= neighbour.back().value)
+			{//最后一个直接跳过,减少循环次数
+				continue;
+			}
+			for (auto n = neighbour.begin(); n != neighbour.end(); ++n)
+			{
+				if (n->value <= pearsonValue)
+				{//插入较大值，删除行尾
+					Pair p(j->first, pearsonValue);
+					neighbour.insert(n, p);
+					neighbour.pop_back();
+					break;
+				}
+			}
+		}
+		int k = 0;
+		//取出前NBU_LEN,结果归0
+		for (auto n = neighbour.begin(); n != neighbour.end(); ++n)
+		{
+			i->second.neighbors[k++] = n->id;
+		}
+		neighbour.clear();
+	}
+}
+
+//商品pearson系数
 void CF::initItemPearson()
 {
 #pragma omp parallel for
@@ -258,7 +401,47 @@ void CF::initItemPearson()
 	}
 }
 //产生推荐，预测某用户对某项目的评分
-double CF::predictRate(ID_TYPE user, ID_TYPE iterm) {
+double CF::predictRate(ID_TYPE user, ID_TYPE item) {
+	double sumi = 0, sum2 = 0, sim;
+	int index, n = 0;
+	for (int i = 0; i < NBU_LEN; ++i) {
+		index = nbu[user][i];
+		if (index < 0)
+		{
+			break;
+		}
+		sim = (getUserPearson(user, index));
+		for (auto r : rate[index])
+		{
+			if (r.item == item)
+			{
+				sumi += sim*(r.rank - rate_avg[index]);
+				sum2 += fabs(sim);
+				++n;
+				break;
+			}
+		}
+	}
+	double y;
+	if (n == 0)
+	{
+		y = rate_avg[user];
+	}
+	else
+	{
+		y = rate_avg[user] + sumi / sum2;
+		if (y < 0)
+		{
+			y = 0;
+		}
+		else if (y>100)
+		{
+			y = 100;
+		}
+	}
+	return y;
+}
+double CF::predictRate2(ID_TYPE user, ID_TYPE item) {
 	double sumi = 0, sum2 = 0, sim;
 	int index;
 
@@ -267,146 +450,62 @@ double CF::predictRate(ID_TYPE user, ID_TYPE iterm) {
 		sim = getUserPearson(user, index);
 		for (auto r : rate[index])
 		{
-			if (r.item == index)
+			if (r.item == item)
 			{
-				sumi = sim*(r.rank - rate_avg[index]);
+				sumi += sim*(r.rank);
+				sum2 += fabs(sim);
+				break;
 			}
 		}
-		sum2 += sim;
+
 	}
-	return rate_avg[user] + sumi / sum2;
+	return sum2 == 0 ? rate_avg[user] : sumi / sum2;
 }
-//#include<iostream>
-//#include<queue>
-//#include<cmath>
-//#include<cassert>
-//#include<cstdlib>
-//#include<fstream>
-//#include<sstream>
-//#include<vector>
-//#include<algorithm>
-//
-//using namespace std;
-//
-//const int ITERM_SIZE = 1682;
-//const int USER_SIZE = 943;
-//const int V = 15;        //ITERM的最近邻居数
-//const int S = 10;        //USER的最近邻居数
-//
-//struct MyPair {
-//	int id;
-//	double value;
-//	MyPair(int i = 0, double v = 0) :id(i), value(v) {}
-//};
-//
-//struct cmp {
-//	bool operator() (const MyPair & obj1, const MyPair & obj2)const {
-//		return obj1.value < obj2.value;
-//	}
-//};
-//
-//double rate[USER_SIZE][ITERM_SIZE];    //评分矩阵
-//MyPair nbi[ITERM_SIZE][V];            //存放每个ITERM的最近邻居
-//MyPair nbu[USER_SIZE][S];            //存放每个USER的最近邻居
-//double rate_avg[USER_SIZE];            //每个用户的平均评分
-//
-//									   //从文件中读入评分矩阵
-//int readRate(string filename) {
-//	ifstream ifs;
-//	ifs.open(filename.c_str());
-//	if (!ifs) {
-//		cerr << "error:unable to open input file " << filename << endl;
-//		return -1;
-//	}
-//	string line;
-//	while (getline(ifs, line)) {
-//		string str1, str2, str3;
-//		istringstream strstm(line);
-//		strstm >> str1 >> str2 >> str3;
-//		int userid = atoi(str1.c_str());
-//		int itermid = atoi(str2.c_str());
-//		double rating = atof(str3.c_str());
-//		rate[userid - 1][itermid - 1] = rating;
-//		line.clear();
-//	}
-//	ifs.close();
-//	return 0;
-//}
-//
-////计算每个用户的平均评分
-//void getAvgRate() {
-//	for (int i = 0; i<USER_SIZE; ++i) {
-//		double sum = 0;
-//		for (int j = 0; j<ITERM_SIZE; ++j)
-//			sum += rate[i][j];
-//		rate_avg[i] = sum / ITERM_SIZE;
-//	}
-//}
-//
-////计算两个向量的皮尔森相关系数
-//double getSim(const vector<double> &vec1, const vector<double> &vec2) {
-//	int len = vec1.size();
-//	assert(len == vec2.size());
-//	double sum1 = 0;
-//	double sum2 = 0;
-//	double sum1_1 = 0;
-//	double sum2_2 = 0;
-//	double sum = 0;
-//	for (int i = 0; i<len; i++) {
-//		sum += vec1[i] * vec2[i];
-//		sum1 += vec1[i];
-//		sum2 += vec2[i];
-//		sum1_1 += vec1[i] * vec1[i];
-//		sum2_2 += vec2[i] * vec2[i];
-//	}
-//	double ex = sum1 / len;
-//	double ey = sum2 / len;
-//	double ex2 = sum1_1 / len;
-//	double ey2 = sum2_2 / len;
-//	double exy = sum / len;
-//	double sdx = sqrt(ex2 - ex*ex);
-//	double sdy = sqrt(ey2 - ey*ey);
-//	assert(sdx != 0 && sdy != 0);
-//	double sim = (exy - ex*ey) / (sdx*sdy);
-//	return sim;
-//}
-//
-////计算每个ITERM的最近邻
-//void getNBI() {
-//	for (int i = 0; i<ITERM_SIZE; ++i) {
-//		vector<double> vec1;
-//		priority_queue<MyPair, vector<MyPair>, cmp> neighbour;
-//		for (int k = 0; k<USER_SIZE; k++)
-//			vec1.push_back(rate[k][i]);
-//		for (int j = 0; j<ITERM_SIZE; j++) {
-//			if (i == j)
-//				continue;
-//			vector<double> vec2;
-//			for (int k = 0; k<USER_SIZE; k++)
-//				vec2.push_back(rate[k][j]);
-//			double sim = getSim(vec1, vec2);
-//			MyPair p(j, sim);
-//			neighbour.push(p);
-//		}
-//		for (int j = 0; j<V; ++j) {
-//			nbi[i][j] = neighbour.top();
-//			neighbour.pop();
-//		}
-//	}
-//}
-//
-////预测用户对未评分项目的评分值
-//double getPredict(const vector<double> &user, int index) {
-//	double sum1 = 0;
-//	double sum2 = 0;
-//	for (int i = 0; i<V; ++i) {
-//		int neib_index = nbi[index][i].id;
-//		double neib_sim = nbi[index][i].value;
-//		sum1 += neib_sim*user[neib_index];
-//		sum2 += fabs(neib_sim);
-//	}
-//	return sum1 / sum2;
-//}
+void CF::SaveNBU(char* filename)
+{
+	ofstream f(filename);
+	f << USER_SIZE << "\t" << NBU_LEN << endl;
+	for (size_t i = 0; i < USER_SIZE; i++)
+	{
+		f << i << "\t";
+		for (size_t j = 0; j < NBU_LEN; j++)
+		{
+			f << nbu[i][j] << ends;
+		}
+		f << endl;
+	}
+	f.close();
+}
+
+//预测用户对未评分项目的评分值
+double CF::getPredict(ID_TYPE user, ID_TYPE item) {
+	double sum1 = 0;
+	double sum2 = 0;
+	auto nb = nbi[item].neighbors;
+	int neib_index, i = 0, j = 0;
+	auto r = rate[user].begin();
+	while (i < NBI_LEN && r != rate[user].end())
+	{
+		neib_index = nb[i];
+		if (neib_index == r->item)
+		{
+			double neib_sim = getItemPearson(item, neib_index);
+			sum1 += r->rank *= neib_sim*r->rank;
+			sum2 += fabs(neib_sim);
+			++i;
+			++r;
+		}
+		else if (neib_index < r->item)
+		{
+			++i;
+		}
+		else
+		{
+			++r;
+		}
+	}
+	return (sum2 == 0) ? 0 : sum1 / sum2;
+}
 //
 ////计算两个用户的相似度
 //double getUserSim(const vector<double> &user1, const vector<double> &user2) {
@@ -429,29 +528,7 @@ double CF::predictRate(ID_TYPE user, ID_TYPE iterm) {
 //	return getSim(vec1, vec2);
 //}
 //
-////计算每个USER的最近邻
-//void getNBU() {
-//	for (int i = 0; i<USER_SIZE; ++i) {
-//		vector<double> user1;
-//		priority_queue<MyPair, vector<MyPair>, cmp> neighbour;
-//		for (int k = 0; k<ITERM_SIZE; ++k)
-//			user1.push_back(rate[i][k]);
-//		for (int j = 0; j<USER_SIZE; ++j) {
-//			if (j == i)
-//				continue;
-//			vector<double> user2;
-//			for (int k = 0; k<ITERM_SIZE; ++k)
-//				user2.push_back(rate[j][k]);
-//			double sim = getUserSim(user1, user2);
-//			MyPair p(j, sim);
-//			neighbour.push(p);
-//		}
-//		for (int j = 0; j<S; ++j) {
-//			nbu[i][j] = neighbour.top();
-//			neighbour.pop();
-//		}
-//	}
-//}
+
 //
 ////产生推荐，预测某用户对某项目的评分
 //double predictRate(int user, int iterm) {
@@ -466,20 +543,3 @@ double CF::predictRate(ID_TYPE user, ID_TYPE iterm) {
 //	return rate_avg[user] + sum1 / sum2;
 //}
 //
-////测试
-//int main() {
-//	string file = "/home/orisun/DataSet/movie-lens-100k/u.data";
-//	if (readRate(file) != 0) {
-//		return -1;
-//	}
-//	getAvgRate();
-//	getNBI();
-//	getNBU();
-//	while (1) {
-//		cout << "please input user index and iterm index which you want predict" << endl;
-//		int user, iterm;
-//		cin >> user >> iterm;
-//		cout << predictRate(user, iterm) << endl;
-//	}
-//	return 0;
-//}

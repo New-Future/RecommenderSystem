@@ -18,5 +18,8 @@
     <ClCompile Include="linear.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\RecommenderSystem\function.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
